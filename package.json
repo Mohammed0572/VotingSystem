@@ -38,6 +38,7 @@
     "tailwindcss": "^4.3.0",
     "truffle": "5.11.5",
     "typescript": "^6.0.3",
-    "vite": "^8.0.12"
+    "vite": "^8.0.12",
+    "vite-plugin-node-polyfills": "^0.28.0"
   }
 }
