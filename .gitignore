@@ -1,0 +1,43 @@
+# ── Dependencies ─────────────────────────────────
+node_modules/
+package-lock.json
+
+# ── Environment Variables (secrets) ──────────────
+.env
+.env.local
+.env.production
+
+# ── Build & Compiled Output ──────────────────────
+build/
+dist/
+src/dist/
+
+# ── Python ───────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+*.sqlite
+
+# ── Face Recognition (binary data) ───────────────
+encodings.pkl
+
+# ── Logs ─────────────────────────────────────────
+logs/
+*.log
+
+# ── OS Files ─────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ── IDE / Editor ─────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── AI Assistant Config ──────────────────────────
+.claude/
+.gemini/
