@@ -19,12 +19,12 @@ const Admin = () => {
     }
   }, [navigate]);
 
-  const updateStatus = (msg, type) => {
+  const updateStatus = (msg: string, type: string) => {
     setStatus({ message: msg, type });
     setTimeout(() => setStatus({ message: '', type: '' }), 5000);
   };
 
-  const handleAddCandidate = async (e) => {
+  const handleAddCandidate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!candidateName.trim() || !candidateParty.trim()) {
       updateStatus('Please fill all candidate fields.', 'error');
@@ -43,7 +43,7 @@ const Admin = () => {
     }
   };
 
-  const handleSetDates = async (e) => {
+  const handleSetDates = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!startDate || !endDate) {
       updateStatus('Please select both start and end dates.', 'error');

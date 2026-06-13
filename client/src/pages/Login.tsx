@@ -8,13 +8,13 @@ const Login = () => {
   const [adminPassword, setAdminPassword] = useState('');
   
   // Camera state
-  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
   const [status, setStatus] = useState({ message: '', type: '' });
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
   
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const streamRef = useRef(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   
   const navigate = useNavigate();
 
@@ -27,7 +27,7 @@ const Login = () => {
     };
   }, []);
 
-  const updateStatus = (msg, type = 'info') => {
+  const updateStatus = (msg: string, type: string = 'info') => {
     setStatus({ message: msg, type });
   };
 
