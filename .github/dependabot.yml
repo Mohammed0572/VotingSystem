@@ -1,6 +1,8 @@
 version: 2
 updates:
-  - package-ecosystem: "npm" # dependabot doesn't officially support 'pnpm' string here yet without extra config, wait, it might? Dependabot does support pnpm if pnpm-lock.yaml is present. Wait, it doesn't support 'pnpm' ecosystem name, but uses 'npm' with pnpm lockfiles automatically. Let's keep it as npm.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
       interval: "weekly"
   - package-ecosystem: "pip"
     directory: "/Database_API"
