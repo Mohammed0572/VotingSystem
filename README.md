@@ -1,5 +1,11 @@
 # Multimodal Blockchain based Voting System
 
+[![Build Status](https://github.com/Mohammed0572/VotingSystem/actions/workflows/build.yml/badge.svg)](https://github.com/Mohammed0572/VotingSystem/actions/workflows/build.yml)
+![Solidity](https://img.shields.io/badge/Solidity-%23363636.svg?style=flat-square&logo=solidity&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+![Platform](https://img.shields.io/badge/platform-Web-lightgrey.svg)
+
 This project is a highly secure, transparent, and tamper-proof voting system built on the Ethereum blockchain. By integrating advanced facial recognition technology with decentralized smart contracts, the system ensures that elections are fair, verifiable, and completely immune to voter fraud or manipulation.
 
 ---
