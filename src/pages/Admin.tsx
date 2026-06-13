@@ -72,92 +72,100 @@ const Admin = () => {
   }
 
   return (
-    <div className="glass-panel p-6 sm:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="gov-panel p-6 sm:p-8">
       <div className="text-center mb-10">
-        <h1 className="text-3xl font-extrabold text-gray-900">Admin Dashboard</h1>
-        <p className="text-gray-600 mt-2">Manage election parameters and candidates.</p>
+        <h1 className="text-3xl font-bold font-heading text-[#112e51]">System Administration</h1>
+        <p className="text-[#565c65] mt-2">Manage official election parameters and candidates.</p>
       </div>
 
       {status.message && (
-        <div className={`mb-6 p-4 rounded-lg text-sm font-medium border ${status.type === 'error' ? 'bg-red-50 text-red-600 border-red-200' : status.type === 'success' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-blue-50 text-blue-600 border-blue-200'}`}>
-          {status.message}
+        <div className={`mb-6 ${status.type === 'error' ? 'gov-alert-error' : status.type === 'success' ? 'gov-alert-success' : 'gov-alert-info'} rounded-sm`}>
+          <strong>Status:</strong> {status.message}
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Add Candidate Form */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-[#f8f5ec] p-6 rounded-sm border border-[#dfe1e2]">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+            <div className="p-2 bg-[#005ea2] text-white rounded-full">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
             </div>
-            <h2 className="text-xl font-bold text-gray-900">Add Candidate</h2>
+            <h2 className="text-xl font-bold font-heading text-[#112e51]">Register Candidate</h2>
           </div>
           
           <form onSubmit={handleAddCandidate} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Candidate Name</label>
+              <label className="gov-input-label" htmlFor="candidateName">Candidate Full Name</label>
               <input
+                id="candidateName"
                 type="text"
                 value={candidateName}
                 onChange={(e) => setCandidateName(e.target.value)}
                 placeholder="e.g. John Doe"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="gov-input"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Political Party</label>
+              <label className="gov-input-label" htmlFor="candidateParty">Political Party / Faction</label>
               <input
+                id="candidateParty"
                 type="text"
                 value={candidateParty}
                 onChange={(e) => setCandidateParty(e.target.value)}
                 placeholder="e.g. Independent"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="gov-input"
               />
             </div>
-            <button
-              type="submit"
-              className="w-full py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors shadow-sm focus:ring-2 focus:ring-offset-1 focus:ring-primary-500"
-            >
-              Add to Blockchain
-            </button>
+            <div className="pt-2">
+              <button
+                type="submit"
+                className="gov-button"
+              >
+                Add to Official Record
+              </button>
+            </div>
           </form>
         </div>
 
         {/* Set Dates Form */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-[#f8f5ec] p-6 rounded-sm border border-[#dfe1e2]">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-purple-100 text-purple-600 rounded-lg">
+            <div className="p-2 bg-[#005ea2] text-white rounded-full">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
             </div>
-            <h2 className="text-xl font-bold text-gray-900">Election Schedule</h2>
+            <h2 className="text-xl font-bold font-heading text-[#112e51]">Election Schedule</h2>
           </div>
 
           <form onSubmit={handleSetDates} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+              <label className="gov-input-label" htmlFor="startDate">Voting Start Date</label>
               <input
+                id="startDate"
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="gov-input"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+              <label className="gov-input-label" htmlFor="endDate">Voting End Date</label>
               <input
+                id="endDate"
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="gov-input"
               />
             </div>
-            <button
-              type="submit"
-              className="w-full py-2.5 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors shadow-sm focus:ring-2 focus:ring-offset-1 focus:ring-purple-500"
-            >
-              Update Schedule
-            </button>
+            <div className="pt-2">
+              <button
+                type="submit"
+                className="gov-button"
+              >
+                Update Official Schedule
+              </button>
+            </div>
           </form>
         </div>
       </div>
