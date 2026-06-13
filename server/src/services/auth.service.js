@@ -16,7 +16,10 @@ class AuthService {
    */
   async register({ name, email, password }) {
     // Check if email already exists
-    const existingUser = await User.findOne({ email: String(email) });
+    if (typeof email !== 'string') {
+      throw ApiError.badRequest('Invalid email.');
+    }
+    const existingUser = await User.findOne({ email: { $eq: email } });
     if (existingUser) {
       throw ApiError.conflict('A user with this email already exists.');
     }
@@ -37,7 +40,10 @@ class AuthService {
    */
   async login({ email, password }) {
     // Find user and explicitly select password field
-    const user = await User.findOne({ email: String(email) }).select('+password');
+    if (typeof email !== 'string') {
+      throw ApiError.badRequest('Invalid email.');
+    }
+    const user = await User.findOne({ email: { $eq: email } }).select('+password');
     if (!user) {
       throw ApiError.unauthorized('Invalid email or password.');
     }
@@ -63,7 +69,7 @@ class AuthService {
    * @returns {Object} user
    */
   async getCurrentUser(userId) {
-    const user = await User.findById(String(userId));
+    const user = await User.findOne({ _id: { $eq: userId } });
     if (!user) {
       throw ApiError.notFound('User not found.');
     }
