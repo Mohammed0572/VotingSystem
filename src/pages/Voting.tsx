@@ -69,7 +69,7 @@ const Voting = () => {
     setMessage({ text: 'Waiting for blockchain confirmation...', type: 'info' });
 
     try {
-      await contract.vote(selectedCandidate, { from: account });
+      await contract.vote(Number(selectedCandidate), { from: account });
       setHasVoted(true);
       setMessage({ text: 'Your vote has been successfully cast!', type: 'success' });
       await loadVotingData(); // Refresh counts
@@ -135,7 +135,7 @@ const Voting = () => {
             ))}
             {candidates.length === 0 && (
               <tr>
-                <td colSpan="3" className="px-6 py-8 text-center text-gray-500">No candidates available.</td>
+                <td colSpan={3} className="px-6 py-8 text-center text-gray-500">No candidates available.</td>
               </tr>
             )}
           </tbody>

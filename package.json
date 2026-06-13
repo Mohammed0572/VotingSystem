@@ -4,24 +4,40 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "serve": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@truffle/contract": "^4.6.18",
-    "browserify": "^17.0.0",
+    "@truffle/contract": "^4.6.31",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "express-rate-limit": "^8.5.2",
     "jsonwebtoken": "^9.0.0",
-    "web3": "^1.9.0"
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-router-dom": "^7.17.0",
+    "web3": "^1.10.4"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0",
-    "@babel/preset-env": "^7.20.0",
-    "babelify": "^10.0.0",
-    "browserify": "^17.0.0",
-    "truffle": "5.11.5"
+    "@eslint/js": "^10.0.1",
+    "@tailwindcss/vite": "^4.3.0",
+    "@types/node": "^25.9.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
+    "eslint": "^10.3.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.6.0",
+    "tailwindcss": "^4.3.0",
+    "truffle": "5.11.5",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.12"
   }
 }
