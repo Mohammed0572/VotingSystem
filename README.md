@@ -11,7 +11,7 @@ This project is a highly secure, transparent, and tamper-proof voting system bui
 
 ---
 
-## ⚙️ How the System Works
+## How the System Works
 
 The voting process is divided into clear, secure stages to ensure the integrity of the election from start to finish.
 
@@ -43,7 +43,7 @@ Administrators have access to a separate, secure dashboard where they can:
 
 ---
 
-## 🛡️ Core Security Features
+## Core Security Features
 
 - **Biometric Anti-Spoofing:** You cannot vote using someone else's credentials. The facial recognition system ensures the physical presence of the actual voter.
 - **Immutability:** Because votes are stored on the Ethereum blockchain, they cannot be deleted, modified, or tampered with by anyone—not even the administrators.
@@ -52,7 +52,7 @@ Administrators have access to a separate, secure dashboard where they can:
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```text
 ├── contracts/                    # Solidity smart contracts (Voting.sol)
@@ -68,7 +68,7 @@ Administrators have access to a separate, secure dashboard where they can:
 
 ---
 
-## 🚀 Getting Started Locally
+## Getting Started Locally
 
 Follow these steps to download and run the project on your local machine.
 
