@@ -42,7 +42,7 @@ class ElectionService {
    */
   async getAllElections({ status, page = 1, limit = 20 } = {}) {
     const filter = {};
-    if (status) filter.status = String(status);
+    if (typeof status === 'string') filter.status = { $eq: status };
 
     const skip = (page - 1) * limit;
 
@@ -80,7 +80,7 @@ class ElectionService {
    * @returns {Object} election
    */
   async getElectionById(electionId) {
-    const election = await Election.findById(electionId)
+    const election = await Election.findOne({ _id: { $eq: electionId } })
       .populate('createdBy', 'name email');
 
     if (!election) {
@@ -104,7 +104,7 @@ class ElectionService {
    * @returns {Object} updated election
    */
   async updateElection(electionId, updateData) {
-    const election = await Election.findById(electionId);
+    const election = await Election.findOne({ _id: { $eq: electionId } });
     if (!election) {
       throw ApiError.notFound('Election not found.');
     }
@@ -126,7 +126,7 @@ class ElectionService {
    * @param {string} electionId
    */
   async deleteElection(electionId) {
-    const election = await Election.findById(electionId);
+    const election = await Election.findOne({ _id: { $eq: electionId } });
     if (!election) {
       throw ApiError.notFound('Election not found.');
     }
@@ -136,7 +136,7 @@ class ElectionService {
       throw ApiError.badRequest('Cannot delete an active election.');
     }
 
-    await Election.findByIdAndDelete(electionId);
+    await Election.findOneAndDelete({ _id: { $eq: electionId } });
   }
 
   /**
@@ -146,7 +146,7 @@ class ElectionService {
    * @returns {Object} updated election
    */
   async addCandidate(electionId, candidateData) {
-    const election = await Election.findById(electionId);
+    const election = await Election.findOne({ _id: { $eq: electionId } });
     if (!election) {
       throw ApiError.notFound('Election not found.');
     }
@@ -176,7 +176,7 @@ class ElectionService {
    * @returns {Object} results
    */
   async getResults(electionId) {
-    const election = await Election.findById(electionId).lean();
+    const election = await Election.findOne({ _id: { $eq: electionId } }).lean();
     if (!election) {
       throw ApiError.notFound('Election not found.');
     }
