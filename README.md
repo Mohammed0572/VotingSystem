@@ -9,6 +9,10 @@
 
 This project is a highly secure, transparent, and tamper-proof voting system built on the Ethereum blockchain. By integrating advanced facial recognition technology with decentralized smart contracts, the system ensures that elections are fair, verifiable, and completely immune to voter fraud or manipulation.
 
+### Dashboard Overview
+![Admin Dashboard](./public/Dashboard.png)
+*The centralized, modern interface for managing the election process securely.*
+
 ---
 
 ## How the System Works
