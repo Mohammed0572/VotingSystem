@@ -28,7 +28,5 @@ jobs:
       with:
         node-version: '18.x'
         cache: 'pnpm'
-    - name: Install Truffle
-      run: pnpm add -g truffle
     - name: Compile Contracts
-      run: truffle compile
+      run: npx truffle compile
