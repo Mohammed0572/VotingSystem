@@ -38,14 +38,8 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
     const initWeb3 = async () => {
       try {
         let currentWeb3;
-        if (window.ethereum) {
-          currentWeb3 = new Web3(window.ethereum);
-          await window.ethereum.request({ method: 'eth_requestAccounts' });
-        } else if (window.web3) {
-          currentWeb3 = new Web3(window.web3.currentProvider);
-        } else {
-          currentWeb3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:7545"));
-        }
+        // Force local Ganache provider for development to avoid MetaMask network mismatch
+        currentWeb3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:7545"));
         
         setWeb3(currentWeb3);
         
