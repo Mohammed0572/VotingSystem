@@ -14,7 +14,7 @@ class UserService {
    * @returns {Object} user
    */
   async getProfile(userId) {
-    const user = await User.findById(String(userId));
+    const user = await User.findOne({ _id: { $eq: userId } });
     if (!user) {
       throw ApiError.notFound('User not found.');
     }
@@ -32,7 +32,7 @@ class UserService {
     const allowedFields = ['name'];
     const sanitizedUpdate = {};
     allowedFields.forEach((field) => {
-      if (updateData[field] !== undefined) {
+      if (typeof updateData[field] === 'string') {
         sanitizedUpdate[field] = updateData[field];
       }
     });
@@ -41,10 +41,14 @@ class UserService {
       throw ApiError.badRequest('No valid fields to update.');
     }
 
-    const user = await User.findByIdAndUpdate(String(userId), sanitizedUpdate, {
-      new: true,
-      runValidators: true,
-    });
+    const user = await User.findOneAndUpdate(
+      { _id: { $eq: userId } },
+      { $set: sanitizedUpdate },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
 
     if (!user) {
       throw ApiError.notFound('User not found.');
@@ -60,7 +64,7 @@ class UserService {
    */
   async getAllUsers({ page = PAGINATION_DEFAULTS.PAGE, limit = PAGINATION_DEFAULTS.LIMIT, role } = {}) {
     const filter = {};
-    if (role) filter.role = String(role);
+    if (typeof role === 'string') filter.role = { $eq: role };
 
     const safeLimit = Math.min(limit, PAGINATION_DEFAULTS.MAX_LIMIT);
     const skip = (page - 1) * safeLimit;
@@ -89,7 +93,10 @@ class UserService {
    * @returns {Object} updated user
    */
   async changeUserRole(userId, newRole) {
-    const user = await User.findById(String(userId));
+    if (typeof newRole !== 'string') {
+      throw ApiError.badRequest('Invalid role.');
+    }
+    const user = await User.findOne({ _id: { $eq: userId } });
     if (!user) {
       throw ApiError.notFound('User not found.');
     }
@@ -114,12 +121,10 @@ class UserService {
       throw ApiError.badRequest('You cannot delete your own account.');
     }
 
-    const user = await User.findById(String(userId));
+    const user = await User.findOneAndDelete({ _id: { $eq: userId } });
     if (!user) {
       throw ApiError.notFound('User not found.');
     }
-
-    await User.findByIdAndDelete(String(userId));
   }
 }
 
