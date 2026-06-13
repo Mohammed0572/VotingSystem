@@ -2,13 +2,13 @@
   "name": "decentralized-voting",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "index.ts",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "serve": "node index.js",
+    "serve": "ts-node index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -27,6 +27,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.0",
+    "@types/express": "^5.0.6",
     "@types/node": "^25.9.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
@@ -37,6 +38,7 @@
     "globals": "^17.6.0",
     "tailwindcss": "^4.3.0",
     "truffle": "5.11.5",
+    "ts-node": "^10.9.2",
     "typescript": "^6.0.3",
     "vite": "^8.0.12",
     "vite-plugin-node-polyfills": "^0.28.0"
