@@ -3,7 +3,7 @@
 
 fastapi>=0.100.0
 uvicorn[standard]>=0.23.0
-python-dotenv>=1.0.0
+python-dotenv>=1.2.2
 PyJWT>=2.8.0
 opencv-python>=4.8.0
 numpy>=1.24.0
