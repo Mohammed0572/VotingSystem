@@ -2,13 +2,20 @@ import { useState, useEffect } from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { useNavigate } from 'react-router-dom';
 
+interface Candidate {
+  id: number;
+  name: string;
+  party: string;
+  voteCount: number;
+}
+
 const Voting = () => {
   const { account, contract, isLoading } = useWeb3();
-  const [candidates, setCandidates] = useState([]);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [dates, setDates] = useState({ start: '', end: '' });
-  const [hasVoted, setHasVoted] = useState(false);
-  const [selectedCandidate, setSelectedCandidate] = useState(null);
-  const [isVoting, setIsVoting] = useState(false);
+  const [hasVoted, setHasVoted] = useState<boolean>(false);
+  const [selectedCandidate, setSelectedCandidate] = useState<number | null>(null);
+  const [isVoting, setIsVoting] = useState<boolean>(false);
   const [message, setMessage] = useState({ text: '', type: '' });
   const navigate = useNavigate();
 
@@ -62,7 +69,7 @@ const Voting = () => {
     setMessage({ text: 'Waiting for blockchain confirmation...', type: 'info' });
 
     try {
-      await contract.vote(selectedCandidate, { from: account });
+      await contract.vote(Number(selectedCandidate), { from: account });
       setHasVoted(true);
       setMessage({ text: 'Your vote has been successfully cast!', type: 'success' });
       await loadVotingData(); // Refresh counts
@@ -128,7 +135,7 @@ const Voting = () => {
             ))}
             {candidates.length === 0 && (
               <tr>
-                <td colSpan="3" className="px-6 py-8 text-center text-gray-500">No candidates available.</td>
+                <td colSpan={3} className="px-6 py-8 text-center text-gray-500">No candidates available.</td>
               </tr>
             )}
           </tbody>

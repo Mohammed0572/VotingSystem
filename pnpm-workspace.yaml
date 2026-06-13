@@ -1,8 +1,3 @@
-packages:
-  - '.'
-  - 'server'
-  - 'client'
-
 allowBuilds:
   '@apollo/protobufjs': set this to true or false
   bufferutil: set this to true or false
