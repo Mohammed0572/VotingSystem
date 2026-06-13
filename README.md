@@ -13,6 +13,12 @@ This project is a highly secure, transparent, and tamper-proof voting system bui
 ![Admin Dashboard](./public/Dashboard.png)
 *The centralized, modern interface for managing the election process securely.*
 
+### System Architecture
+![System Architecture](./public/assets/System%20Architecture.png)
+
+### Usecase Diagram
+![Usecase Diagram](./public/assets/Usecase%20Diagram.png)
+
 ---
 
 ## How the System Works
