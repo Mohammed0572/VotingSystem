@@ -1,0 +1,394 @@
+/* ═══════════════════════════════════════════════════════════════
+   Decentralized Voting — Login Portal
+   Enterprise / Government-Grade Design
+   Palette: White (#FFFFFF) + Blue (#1D4ED8)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Reset & Base ────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+               Roboto, Helvetica, Arial, sans-serif;
+  background-color: #F3F4F6;
+  color: #111827;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Top Bar ─────────────────────────────────────────────────── */
+.topbar {
+  background-color: #FFFFFF;
+  border-bottom: 1px solid #E5E7EB;
+  padding: 0 1.5rem;
+  height: 56px;
+  flex-shrink: 0;
+}
+
+.topbar-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.brand-icon {
+  width: 20px;
+  height: 20px;
+  color: #1D4ED8;
+  flex-shrink: 0;
+}
+
+.brand-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+  letter-spacing: -0.2px;
+}
+
+.topbar-badge {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #1D4ED8;
+  background-color: #EFF6FF;
+  border: 1px solid #DBEAFE;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+}
+
+/* ── Main Layout ─────────────────────────────────────────────── */
+.page-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1rem 2rem;
+}
+
+/* ── Card ────────────────────────────────────────────────────── */
+.card {
+  width: 100%;
+  max-width: 460px;
+  background-color: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 1.75rem 2rem 0;
+}
+
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.3px;
+  margin-bottom: 0.35rem;
+}
+
+.card-desc {
+  font-size: 0.82rem;
+  color: #6B7280;
+  line-height: 1.5;
+}
+
+.card-body {
+  padding: 1.5rem 2rem 1.75rem;
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.85rem 2rem;
+  background-color: #F9FAFB;
+  border-top: 1px solid #E5E7EB;
+  font-size: 0.72rem;
+  color: #9CA3AF;
+}
+
+.footer-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+/* ── Admin Shield Icon ───────────────────────────────────────── */
+.admin-shield {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background-color: #EFF6FF;
+  border: 1px solid #DBEAFE;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.admin-shield svg {
+  width: 24px;
+  height: 24px;
+  color: #1D4ED8;
+}
+
+/* ── Form Elements ───────────────────────────────────────────── */
+.form-group {
+  margin-bottom: 1.15rem;
+}
+
+.form-group label,
+.field-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.35rem;
+  letter-spacing: 0.1px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.88rem;
+  font-family: inherit;
+  color: #111827;
+  background-color: #FFFFFF;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-group input::placeholder {
+  color: #9CA3AF;
+}
+
+.form-group input:focus {
+  border-color: #1D4ED8;
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
+}
+
+/* ── Webcam Container ────────────────────────────────────────── */
+.webcam-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4/3;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: #1F2937;
+  border: 1px solid #D1D5DB;
+  margin-bottom: 1rem;
+}
+
+.webcam-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.webcam-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background-color: #1F2937;
+  z-index: 2;
+}
+
+.overlay-icon {
+  width: 36px;
+  height: 36px;
+  color: #4B5563;
+}
+
+.overlay-text {
+  font-size: 0.8rem;
+  color: #6B7280;
+}
+
+/* Face guide — subtle dashed oval */
+.face-guide {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 42%;
+  height: 62%;
+  transform: translate(-50%, -50%);
+  border: 2px dashed rgba(29, 78, 216, 0.55);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 3;
+  animation: guidePulse 2.5s ease-in-out infinite;
+}
+
+@keyframes guidePulse {
+  0%, 100% { border-color: rgba(29, 78, 216, 0.35); }
+  50%      { border-color: rgba(29, 78, 216, 0.7); }
+}
+
+/* ── Status Messages ─────────────────────────────────────────── */
+.status-msg {
+  min-height: 1.25rem;
+  font-size: 0.78rem;
+  text-align: center;
+  margin-bottom: 1rem;
+  transition: color 0.15s;
+  color: #6B7280;
+}
+
+.status-info    { color: #6B7280; }
+.status-success { color: #059669; }
+.status-error   { color: #DC2626; }
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.btn-group {
+  display: flex;
+  gap: 0.65rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: inherit;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s, box-shadow 0.15s;
+  flex: 1;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* Primary — solid blue */
+.btn-primary {
+  background-color: #1D4ED8;
+  color: #FFFFFF;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #1E40AF;
+}
+
+.btn-primary:active:not(:disabled) {
+  background-color: #1E3A8A;
+}
+
+/* Secondary — outlined */
+.btn-secondary {
+  background-color: #FFFFFF;
+  color: #374151;
+  border: 1px solid #D1D5DB;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #F9FAFB;
+  border-color: #9CA3AF;
+}
+
+/* "Stop Camera" state */
+.btn-secondary.active {
+  background-color: #FEF2F2;
+  border-color: #FECACA;
+  color: #DC2626;
+}
+
+/* ── Error Message ───────────────────────────────────────────── */
+.error-msg {
+  display: none;
+  margin-top: 1rem;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  background-color: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 6px;
+  color: #DC2626;
+  text-align: center;
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+.page-footer {
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.72rem;
+  color: #9CA3AF;
+  border-top: 1px solid #E5E7EB;
+  background-color: #FFFFFF;
+  flex-shrink: 0;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 520px) {
+  .topbar-badge {
+    display: none;
+  }
+
+  .page-main {
+    padding: 1.5rem 0.75rem 1.5rem;
+  }
+
+  .card-header {
+    padding: 1.25rem 1.25rem 0;
+  }
+
+  .card-body {
+    padding: 1.25rem;
+  }
+
+  .card-footer {
+    padding: 0.75rem 1.25rem;
+  }
+
+  .card-title {
+    font-size: 1.1rem;
+  }
+
+  .btn-group {
+    flex-direction: column;
+  }
+}
