@@ -16,6 +16,9 @@ const routes = require('./routes');
 
 const app = express();
 
+// Trust reverse proxy for rate limiting and security middleware to work correctly
+app.set('trust proxy', 1);
+
 // ── Security Headers ─────────────────────────────────────
 app.use(helmet());
 
