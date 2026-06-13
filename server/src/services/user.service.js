@@ -14,7 +14,7 @@ class UserService {
    * @returns {Object} user
    */
   async getProfile(userId) {
-    const user = await User.findById(userId);
+    const user = await User.findById(String(userId));
     if (!user) {
       throw ApiError.notFound('User not found.');
     }
@@ -41,7 +41,7 @@ class UserService {
       throw ApiError.badRequest('No valid fields to update.');
     }
 
-    const user = await User.findByIdAndUpdate(userId, sanitizedUpdate, {
+    const user = await User.findByIdAndUpdate(String(userId), sanitizedUpdate, {
       new: true,
       runValidators: true,
     });
@@ -60,7 +60,7 @@ class UserService {
    */
   async getAllUsers({ page = PAGINATION_DEFAULTS.PAGE, limit = PAGINATION_DEFAULTS.LIMIT, role } = {}) {
     const filter = {};
-    if (role) filter.role = role;
+    if (role) filter.role = String(role);
 
     const safeLimit = Math.min(limit, PAGINATION_DEFAULTS.MAX_LIMIT);
     const skip = (page - 1) * safeLimit;
@@ -89,7 +89,7 @@ class UserService {
    * @returns {Object} updated user
    */
   async changeUserRole(userId, newRole) {
-    const user = await User.findById(userId);
+    const user = await User.findById(String(userId));
     if (!user) {
       throw ApiError.notFound('User not found.');
     }
@@ -114,12 +114,12 @@ class UserService {
       throw ApiError.badRequest('You cannot delete your own account.');
     }
 
-    const user = await User.findById(userId);
+    const user = await User.findById(String(userId));
     if (!user) {
       throw ApiError.notFound('User not found.');
     }
 
-    await User.findByIdAndDelete(userId);
+    await User.findByIdAndDelete(String(userId));
   }
 }
 
