@@ -1,7 +1,7 @@
 # Face Authentication API — Python Dependencies
 # Install with: pip install -r requirements.txt
 
-fastapi>=0.100.0
+fastapi>=0.136.3
 uvicorn[standard]>=0.23.0
 python-dotenv>=1.0.0
 PyJWT>=2.8.0
