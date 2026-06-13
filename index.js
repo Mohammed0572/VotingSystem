@@ -22,13 +22,13 @@ app.use(limiter);
 
 // ── Static File Serving ────────────────────────────
 // Serve the built React application
-app.use(express.static(path.join(__dirname, 'client/dist')));
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // ── Routes ─────────────────────────────────────────
 
 // Serve index.html for all other routes to support React Router SPA
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'client/dist/index.html'));
+  res.sendFile(path.join(__dirname, 'dist/index.html'));
 });
 
 // ── Start Server ───────────────────────────────────
