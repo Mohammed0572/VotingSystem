@@ -1,7 +1,15 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import Web3 from 'web3';
+// @ts-ignore
 import TruffleContract from '@truffle/contract';
-import votingArtifacts from '../../../../build/contracts/Voting.json';
+import votingArtifacts from '../../build/contracts/Voting.json';
+
+declare global {
+  interface Window {
+    ethereum: any;
+    web3: any;
+  }
+}
 
 interface Web3ContextType {
   web3: Web3 | null;
