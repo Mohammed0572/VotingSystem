@@ -23,8 +23,6 @@ jobs:
     - name: Install Dependencies
       run: pnpm install --frozen-lockfile
     - name: Compile Smart Contracts
-      run: |
-        pnpm add -g truffle
-        truffle compile
+      run: npx truffle compile
     - name: Build JS Bundle
       run: npx browserify ./src/js/app.js -o ./src/dist/app.bundle.js
