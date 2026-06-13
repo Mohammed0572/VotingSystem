@@ -1,17 +1,80 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700&family=Lato:wght@300;400;700&display=swap');
 
 @theme {
-  --color-primary-500: #3b82f6;
-  --color-primary-600: #2563eb;
+  --color-gov-navy: #112e51;
+  --color-gov-blue: #005ea2;
+  --color-gov-blue-hover: #1a4480;
+  --color-gov-bg: #f8f5ec;
+  --color-gov-surface: #ffffff;
+  --color-gov-text: #1b1b1b;
+  --color-gov-text-muted: #565c65;
+  --color-gov-border: #dfe1e2;
+  --color-gov-error: #b50909;
+  --color-gov-error-light: #f4e3e3;
+  --color-gov-success: #00a91c;
+  --color-gov-success-light: #e7f4e4;
+  
+  --font-sans: 'Lato', system-ui, sans-serif;
+  --font-serif: 'EB Garamond', Georgia, serif;
+  --font-heading: 'EB Garamond', Georgia, serif;
 }
 
 body {
-  @apply bg-gray-50 text-gray-900;
-  font-family: 'Inter', system-ui, sans-serif;
+  @apply bg-[#f8f5ec] text-[#1b1b1b];
+  font-family: var(--font-sans);
   min-height: 100vh;
+  margin: 0;
+  padding: 0;
 }
 
-/* Glassmorphism utilities */
-.glass-panel {
-  @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-xl rounded-2xl;
+h1, h2, h3, h4, h5, h6, .font-heading {
+  font-family: var(--font-heading);
+  color: var(--color-gov-navy);
 }
+
+/* Formal Panel / Card */
+.gov-panel {
+  @apply bg-[#f8f5ec] border border-[#dfe1e2] shadow-sm rounded-sm;
+}
+
+/* Accessible Inputs */
+.gov-input {
+  @apply w-full bg-[#f8f5ec] border-2 border-[#565c65] text-[#1b1b1b] rounded-sm px-4 py-3 focus:outline-none focus:border-[#005ea2] focus:ring-4 focus:ring-[#005ea2]/30 transition-all;
+}
+
+.gov-input-label {
+  @apply block text-sm font-bold text-[#1b1b1b] mb-1;
+}
+
+/* Accessible Buttons */
+.gov-button {
+  @apply w-full bg-[#005ea2] text-white font-bold rounded-sm px-6 py-3 hover:bg-[#1a4480] focus:outline-none focus:ring-4 focus:ring-[#005ea2]/40 active:bg-[#112e51] transition-all;
+}
+
+.gov-button-outline {
+  @apply w-full bg-transparent border-2 border-[#005ea2] text-[#005ea2] font-bold rounded-sm px-6 py-3 hover:bg-[#005ea2]/10 focus:outline-none focus:ring-4 focus:ring-[#005ea2]/40 active:bg-[#005ea2]/20 transition-all;
+}
+
+/* Feedback / Alerts */
+.gov-alert-error {
+  @apply bg-[#f4e3e3] border-l-4 border-[#b50909] text-[#1b1b1b] p-4;
+}
+
+.gov-alert-success {
+  @apply bg-[#e7f4e4] border-l-4 border-[#00a91c] text-[#1b1b1b] p-4;
+}
+
+.gov-alert-info {
+  @apply bg-[#e1f3f8] border-l-4 border-[#00bde3] text-[#1b1b1b] p-4;
+}
+
+/* Table */
+.gov-table-header {
+  @apply bg-[#f8f5ec] text-[#1b1b1b] font-bold text-left px-4 py-3 border-b-2 border-[#1b1b1b];
+}
+
+.gov-table-cell {
+  @apply px-4 py-4 border-b border-[#dfe1e2] text-[#1b1b1b];
+}
+
