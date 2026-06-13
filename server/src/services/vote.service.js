@@ -18,7 +18,7 @@ class VoteService {
    */
   async castVote(voterId, electionId, candidateId) {
     // 1. Verify election exists and is active
-    const election = await Election.findById(String(electionId));
+    const election = await Election.findOne({ _id: { $eq: electionId } });
     if (!election) {
       throw ApiError.notFound('Election not found.');
     }
@@ -39,7 +39,7 @@ class VoteService {
     }
 
     // 3. Check if user already voted (compound unique index will also catch this)
-    const existingVote = await Vote.findOne({ election: String(electionId), voter: String(voterId) });
+    const existingVote = await Vote.findOne({ election: { $eq: electionId }, voter: { $eq: voterId } });
     if (existingVote) {
       throw ApiError.conflict('You have already voted in this election.');
     }
@@ -53,7 +53,7 @@ class VoteService {
 
     // 5. Increment candidate vote count and total votes
     await Election.findOneAndUpdate(
-      { _id: String(electionId), 'candidates._id': String(candidateId) },
+      { _id: { $eq: electionId }, 'candidates._id': { $eq: candidateId } },
       {
         $inc: {
           'candidates.$.voteCount': 1,
@@ -89,12 +89,12 @@ class VoteService {
    * @returns {Object} { hasVoted, voteId }
    */
   async getVoteStatus(voterId, electionId) {
-    const election = await Election.findById(String(electionId));
+    const election = await Election.findOne({ _id: { $eq: electionId } });
     if (!election) {
       throw ApiError.notFound('Election not found.');
     }
 
-    const vote = await Vote.findOne({ election: String(electionId), voter: String(voterId) });
+    const vote = await Vote.findOne({ election: { $eq: electionId }, voter: { $eq: voterId } });
 
     return {
       hasVoted: !!vote,
