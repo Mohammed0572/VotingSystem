@@ -1,17 +1,30 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import Web3 from 'web3';
 import TruffleContract from '@truffle/contract';
 import votingArtifacts from '../../../../build/contracts/Voting.json';
 
-const Web3Context = createContext();
+interface Web3ContextType {
+  web3: Web3 | null;
+  account: string | null;
+  contract: any | null;
+  isLoading: boolean;
+}
 
-export const useWeb3 = () => useContext(Web3Context);
+const Web3Context = createContext<Web3ContextType | undefined>(undefined);
 
-export const Web3Provider = ({ children }) => {
-  const [web3, setWeb3] = useState(null);
-  const [account, setAccount] = useState(null);
-  const [contract, setContract] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+export const useWeb3 = () => {
+  const context = useContext(Web3Context);
+  if (context === undefined) {
+    throw new Error('useWeb3 must be used within a Web3Provider');
+  }
+  return context;
+};
+
+export const Web3Provider = ({ children }: { children: ReactNode }) => {
+  const [web3, setWeb3] = useState<Web3 | null>(null);
+  const [account, setAccount] = useState<string | null>(null);
+  const [contract, setContract] = useState<any | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const initWeb3 = async () => {
