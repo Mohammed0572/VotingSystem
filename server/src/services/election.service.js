@@ -42,7 +42,7 @@ class ElectionService {
    */
   async getAllElections({ status, page = 1, limit = 20 } = {}) {
     const filter = {};
-    if (status) filter.status = status;
+    if (status) filter.status = String(status);
 
     const skip = (page - 1) * limit;
 
