@@ -19,11 +19,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Install pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 8
     - name: Use Node.js
       uses: actions/setup-node@v3
       with:
         node-version: '18.x'
+        cache: 'pnpm'
     - name: Install Truffle
-      run: npm install -g truffle
+      run: pnpm add -g truffle
     - name: Compile Contracts
       run: truffle compile
