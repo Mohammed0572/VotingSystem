@@ -1,6 +1,7 @@
 # Multimodal Blockchain based Voting System
 
 [![Build Status](https://github.com/Mohammed0572/VotingSystem/actions/workflows/build.yml/badge.svg)](https://github.com/Mohammed0572/VotingSystem/actions/workflows/build.yml)
+[![CodeQL](https://github.com/Mohammed0572/VotingSystem/actions/workflows/codeql.yml/badge.svg)](https://github.com/Mohammed0572/VotingSystem/actions/workflows/codeql.yml)
 ![Solidity](https://img.shields.io/badge/Solidity-%23363636.svg?style=flat-square&logo=solidity&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
