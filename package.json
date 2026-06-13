@@ -17,6 +17,10 @@
     "web3": "^1.9.0"
   },
   "devDependencies": {
-    "truffle": "^5.11.5"
+    "truffle": "5.11.5",
+    "browserify": "^17.0.0",
+    "babelify": "^10.0.0",
+    "@babel/core": "^7.20.0",
+    "@babel/preset-env": "^7.20.0"
   }
 }
