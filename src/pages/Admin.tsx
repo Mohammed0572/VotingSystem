@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
 
 const Admin = () => {
+  const { t } = useLanguage();
   const { account, contract, isLoading } = useWeb3();
   const [candidateName, setCandidateName] = useState('');
   const [candidateParty, setCandidateParty] = useState('');
@@ -74,8 +76,8 @@ const Admin = () => {
   return (
     <div className="gov-panel p-6 sm:p-8">
       <div className="text-center mb-10">
-        <h1 className="text-3xl font-bold font-heading text-[#112e51]">System Administration</h1>
-        <p className="text-[#565c65] mt-2">Manage official election parameters and candidates.</p>
+        <h1 className="text-3xl font-bold font-heading text-[#112e51]">{t('admin.title')}</h1>
+        <p className="text-[#565c65] mt-2">{t('admin.subtitle')}</p>
       </div>
 
       {status.message && (
@@ -91,12 +93,12 @@ const Admin = () => {
             <div className="p-2 bg-[#005ea2] text-white rounded-full">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
             </div>
-            <h2 className="text-xl font-bold font-heading text-[#112e51]">Register Candidate</h2>
+            <h2 className="text-xl font-bold font-heading text-[#112e51]">{t('admin.reg_candidate')}</h2>
           </div>
           
           <form onSubmit={handleAddCandidate} className="space-y-4">
             <div>
-              <label className="gov-input-label" htmlFor="candidateName">Candidate Full Name</label>
+              <label className="gov-input-label" htmlFor="candidateName">{t('admin.cand_name')}</label>
               <input
                 id="candidateName"
                 type="text"
@@ -107,7 +109,7 @@ const Admin = () => {
               />
             </div>
             <div>
-              <label className="gov-input-label" htmlFor="candidateParty">Political Party / Faction</label>
+              <label className="gov-input-label" htmlFor="candidateParty">{t('admin.cand_party')}</label>
               <input
                 id="candidateParty"
                 type="text"
@@ -122,7 +124,7 @@ const Admin = () => {
                 type="submit"
                 className="gov-button"
               >
-                Add to Official Record
+                {t('admin.add_btn')}
               </button>
             </div>
           </form>
@@ -134,12 +136,12 @@ const Admin = () => {
             <div className="p-2 bg-[#005ea2] text-white rounded-full">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
             </div>
-            <h2 className="text-xl font-bold font-heading text-[#112e51]">Election Schedule</h2>
+            <h2 className="text-xl font-bold font-heading text-[#112e51]">{t('admin.schedule')}</h2>
           </div>
 
           <form onSubmit={handleSetDates} className="space-y-4">
             <div>
-              <label className="gov-input-label" htmlFor="startDate">Voting Start Date</label>
+              <label className="gov-input-label" htmlFor="startDate">{t('admin.start_date')}</label>
               <input
                 id="startDate"
                 type="date"
@@ -149,7 +151,7 @@ const Admin = () => {
               />
             </div>
             <div>
-              <label className="gov-input-label" htmlFor="endDate">Voting End Date</label>
+              <label className="gov-input-label" htmlFor="endDate">{t('admin.end_date')}</label>
               <input
                 id="endDate"
                 type="date"
@@ -163,7 +165,7 @@ const Admin = () => {
                 type="submit"
                 className="gov-button"
               >
-                Update Official Schedule
+                {t('admin.update_btn')}
               </button>
             </div>
           </form>
