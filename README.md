@@ -67,7 +67,7 @@ Administrators have access to a separate, secure dashboard where they can:
 ```text
 ├── contracts/                    # Solidity smart contracts (Voting.sol)
 ├── Database_API/                 # Python FastAPI authentication server (Face Auth)
-├── Face Recognition/             # Face registration & recognition CLI scripts
+├── face-recognition/             # Face registration & recognition CLI scripts
 ├── migrations/                   # Truffle deployment scripts
 ├── server/                       # Alternative MongoDB backend (Experimental)
 ├── src/                          # Frontend source files (HTML/CSS/JS)
