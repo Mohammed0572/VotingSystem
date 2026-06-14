@@ -84,6 +84,7 @@ Follow these steps to download and run the project on your local machine.
 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v18+)
+- [pnpm](https://pnpm.io/) (`npm install -g pnpm`)
 - [Python](https://www.python.org/) (v3.10 recommended)
 - [Ganache](https://trufflesuite.com/ganache/) (Local Ethereum blockchain)
 - [MetaMask](https://metamask.io/) browser extension
@@ -98,11 +99,9 @@ cd VotingSystem
 ```
 
 ### 2. Install Dependencies
-Install the Node.js packages for the frontend. You can use either `pnpm` (recommended, as a `pnpm-lock.yaml` exists) or `npm`:
+Install the Node.js packages for the frontend using `pnpm`:
 ```bash
 pnpm install
-# or
-npm install
 ```
 Install the Python packages for the Face Authentication API:
 ```bash
