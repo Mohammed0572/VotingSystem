@@ -129,10 +129,19 @@ Place this exact same `SECRET_KEY` inside **both** `.env` files.
 3. Configure your **MetaMask** extension to connect to `http://localhost:7545` (Chain ID 1337) and import an account using one of Ganache's private keys.
 
 ### 5. Compile and Deploy Smart Contracts
-Open a terminal in the root directory and deploy the contracts to Ganache:
+Open a terminal in the root directory. You can deploy either to your local Ganache network or to the public Sepolia testnet.
+
+**For Local Development (Ganache):**
 ```bash
 truffle compile
 truffle migrate
+```
+
+**For Public Testnet (Sepolia):**
+Ensure you have set the `SEPOLIA_RPC_URL` (e.g., from [Alchemy](https://alchemy.com) or [Infura](https://infura.io)) and `MNEMONIC` in your `.env` file, and that your account has some Sepolia testnet ETH.
+```bash
+truffle compile
+truffle migrate --network sepolia
 ```
 
 ### 6. Build or Run the Frontend
