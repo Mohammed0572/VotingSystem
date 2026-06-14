@@ -13,6 +13,14 @@ const AdminLogin = () => {
     setStatus({ message: msg, type });
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pastedText = e.clipboardData.getData('text');
+    if (pastedText.length > 64) {
+      e.preventDefault();
+      updateStatus("Input length exceeded maximum allowed limit.", "error");
+    }
+  };
+
   const adminLogin = async () => {
     if (!adminId.trim() || !adminPassword.trim()) {
       updateStatus("Please enter both Admin ID and Password.", "error");
@@ -26,7 +34,12 @@ const AdminLogin = () => {
       const response = await fetch('http://127.0.0.1:8000/verify-face', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ voter_id: adminId, image_base64: adminPassword })
+        body: JSON.stringify({ 
+          voter_id: adminId, 
+          image_base64: adminPassword,
+          nonce: crypto.randomUUID(),
+          timestamp: Date.now()
+        })
       });
 
       if (response.ok) {
@@ -65,8 +78,11 @@ const AdminLogin = () => {
             type="text"
             value={adminId}
             onChange={(e) => setAdminId(e.target.value)}
-            placeholder="Enter Official Admin ID"
+            onPaste={handlePaste}
+            placeholder={t('adminlogin.id_placeholder')}
             className="gov-input"
+            maxLength={64}
+            autoComplete="off"
           />
         </div>
         
@@ -77,8 +93,11 @@ const AdminLogin = () => {
             type="password"
             value={adminPassword}
             onChange={(e) => setAdminPassword(e.target.value)}
+            onPaste={handlePaste}
             placeholder="Enter Password"
             className="gov-input"
+            maxLength={64}
+            autoComplete="off"
           />
         </div>
 
