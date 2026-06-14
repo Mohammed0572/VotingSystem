@@ -5,7 +5,7 @@ from unittest.mock import patch
 import numpy as np
 
 # Set required environment variable before importing main
-os.environ["SECRET_KEY"] = "supersecretkey"
+os.environ["FASTAPI_SECRET_KEY"] = "supersecretkey"
 
 import main
 from main import app, get_db
