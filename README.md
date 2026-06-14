@@ -55,7 +55,7 @@ Administrators have access to a separate, secure dashboard where they can:
 
 ## Core Security Features
 
-- **Biometric Anti-Spoofing:** You cannot vote using someone else's credentials. The facial recognition system ensures the physical presence of the actual voter.
+- **Facial Recognition Authentication:** You cannot vote using someone else's credentials. The system uses facial recognition to match the voter. *(Note: Active liveness detection/anti-spoofing is currently out of scope for this prototype).*
 - **Immutability:** Because votes are stored on the Ethereum blockchain, they cannot be deleted, modified, or tampered with by anyone—not even the administrators.
 - **No Single Point of Failure:** Unlike traditional centralized databases that can be hacked to alter vote counts, the decentralized nature of the blockchain ensures the voting data is distributed and secure.
 - **Double-Voting Prevention:** The smart contract logic strictly enforces the rule that one person gets exactly one vote. Any attempt to vote twice is automatically rejected by the blockchain network.
