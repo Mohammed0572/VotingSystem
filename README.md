@@ -117,11 +117,11 @@ Copy the example environment files and set them up:
 cp .env.example .env
 cp Database_API/.env.example Database_API/.env
 ```
-Generate a secure secret key by running:
+Generate two unique secure secret keys by running this command twice:
 ```bash
 node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ```
-Place this exact same `SECRET_KEY` inside **both** `.env` files.
+Place one key as `NODE_SECRET_KEY` in the root `.env` file, and the other as `FASTAPI_SECRET_KEY` in `Database_API/.env`.
 
 ### 4. Start the Blockchain (Ganache)
 1. Open **Ganache** and create a new workspace (e.g., named "development").
