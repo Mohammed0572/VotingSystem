@@ -13,11 +13,15 @@ from main import app, get_db
 # Mock base64 image representing a tiny 1x1 png
 DUMMY_IMAGE = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
 
+import tempfile
+
 @pytest.fixture(autouse=True)
 def setup_database():
-    """Use an in-memory SQLite database for testing."""
+    """Use a temporary SQLite database for testing."""
     original_db = main.DB_PATH
-    main.DB_PATH = ":memory:"
+    fd, temp_path = tempfile.mkstemp(suffix=".sqlite")
+    os.close(fd)
+    main.DB_PATH = temp_path
     main.init_db()
     
     # Seed the admin user manually to bypass lifespan
@@ -33,6 +37,10 @@ def setup_database():
         
     yield
     main.DB_PATH = original_db
+    try:
+        os.remove(temp_path)
+    except OSError:
+        pass
 
 def get_admin_token():
     return main.create_jwt("admin", "admin")
@@ -57,12 +65,16 @@ def test_enroll_face_success(mock_sync, mock_embed):
         assert response.status_code == 201
         assert response.json()["voter_id"] == "test_user"
 
-@patch("main.get_face_embedding")
+@patch("main.get_face_details")
 @patch("main.compare_faces")
 @patch("main._sync_to_pkl")
-def test_verify_face_success(mock_sync, mock_compare, mock_embed):
-    mock_embed.return_value = np.ones(128)
+@patch("main.calculate_ear")
+def test_verify_face_success(mock_ear, mock_sync, mock_compare, mock_details):
+    # Return embedding and dummy landmarks
+    mock_details.return_value = (np.ones(128), {"left_eye": [], "right_eye": []})
     mock_compare.return_value = (True, 0.0)
+    # Simulate a blink: high EAR then low EAR
+    mock_ear.side_effect = [0.3, 0.3, 0.2, 0.2]
     
     with TestClient(app) as client:
         # 1. Enroll
@@ -75,7 +87,7 @@ def test_verify_face_success(mock_sync, mock_compare, mock_embed):
         # 2. Verify
         response = client.post(
             "/verify-face",
-            json={"voter_id": "voter_1", "image_base64": DUMMY_IMAGE}
+            json={"voter_id": "voter_1", "images_base64": [DUMMY_IMAGE, DUMMY_IMAGE]}
         )
         assert response.status_code == 200
         assert "token" in response.json()
