@@ -1,0 +1,108 @@
+import os
+import pytest
+from fastapi.testclient import TestClient
+from unittest.mock import patch
+import numpy as np
+
+# Set required environment variable before importing main
+os.environ["SECRET_KEY"] = "supersecretkey"
+
+import main
+from main import app, get_db
+
+# Mock base64 image representing a tiny 1x1 png
+DUMMY_IMAGE = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+
+@pytest.fixture(autouse=True)
+def setup_database():
+    """Use an in-memory SQLite database for testing."""
+    original_db = main.DB_PATH
+    main.DB_PATH = ":memory:"
+    main.init_db()
+    
+    # Seed the admin user manually to bypass lifespan
+    with get_db() as conn:
+        cursor = conn.cursor()
+        dummy_encoding = np.zeros(128).tolist()
+        import json
+        cursor.execute(
+            "INSERT INTO voters (voter_id, role, face_encoding) VALUES (?, ?, ?)",
+            ("admin", "admin", json.dumps(dummy_encoding)),
+        )
+        conn.commit()
+        
+    yield
+    main.DB_PATH = original_db
+
+def get_admin_token():
+    return main.create_jwt("admin", "admin")
+
+def test_health():
+    with TestClient(app) as client:
+        response = client.get("/health")
+        assert response.status_code == 200
+        assert response.json()["status"] == "ok"
+
+@patch("main.get_face_embedding")
+@patch("main._sync_to_pkl") # Avoid writing to disk
+def test_enroll_face_success(mock_sync, mock_embed):
+    mock_embed.return_value = np.ones(128)
+    
+    with TestClient(app) as client:
+        response = client.post(
+            "/enroll-face",
+            json={"voter_id": "test_user", "role": "user", "image_base64": DUMMY_IMAGE},
+            headers={"Authorization": f"Bearer {get_admin_token()}"}
+        )
+        assert response.status_code == 201
+        assert response.json()["voter_id"] == "test_user"
+
+@patch("main.get_face_embedding")
+@patch("main.compare_faces")
+@patch("main._sync_to_pkl")
+def test_verify_face_success(mock_sync, mock_compare, mock_embed):
+    mock_embed.return_value = np.ones(128)
+    mock_compare.return_value = (True, 0.0)
+    
+    with TestClient(app) as client:
+        # 1. Enroll
+        client.post(
+            "/enroll-face",
+            json={"voter_id": "voter_1", "role": "user", "image_base64": DUMMY_IMAGE},
+            headers={"Authorization": f"Bearer {get_admin_token()}"}
+        )
+        
+        # 2. Verify
+        response = client.post(
+            "/verify-face",
+            json={"voter_id": "voter_1", "image_base64": DUMMY_IMAGE}
+        )
+        assert response.status_code == 200
+        assert "token" in response.json()
+        assert response.json()["voter_id"] == "voter_1"
+
+def test_enroll_requires_admin():
+    with TestClient(app) as client:
+        # No token
+        response = client.post(
+            "/enroll-face",
+            json={"voter_id": "test_user", "role": "user", "image_base64": DUMMY_IMAGE}
+        )
+        assert response.status_code == 401
+        
+        # User token
+        user_token = main.create_jwt("voter_1", "user")
+        response2 = client.post(
+            "/enroll-face",
+            json={"voter_id": "test_user", "role": "user", "image_base64": DUMMY_IMAGE},
+            headers={"Authorization": f"Bearer {user_token}"}
+        )
+        assert response2.status_code == 403
+
+def test_verify_token():
+    with TestClient(app) as client:
+        token = main.create_jwt("voter_2", "user")
+        response = client.get("/verify-token", headers={"Authorization": f"Bearer {token}"})
+        assert response.status_code == 200
+        assert response.json()["valid"] == True
+        assert response.json()["voter_id"] == "voter_2"
