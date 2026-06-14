@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
 
 const AdminLogin = () => {
+  const { t } = useLanguage();
   const [adminId, setAdminId] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [status, setStatus] = useState({ message: '', type: '' });
@@ -51,27 +53,28 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="gov-panel max-w-md mx-auto overflow-hidden mt-8">
-      <div className="bg-[#f8f5ec] border-b border-[#dfe1e2] p-6 text-center">
-        <h2 className="text-2xl font-bold font-heading">Administrator Access</h2>
-        <p className="text-sm text-[#565c65] mt-1">Official Personnel Only</p>
-      </div>
+    <div className="flex-grow flex flex-col items-center justify-center w-full">
+      <div className="gov-panel w-full max-w-md overflow-hidden">
+        <div className="bg-[var(--cream)] border-b border-[var(--border)] p-6 text-center">
+          <h2 className="text-2xl font-bold" style={{ fontFamily: 'var(--font-head)', color: 'var(--ashoka-navy)' }}>{t('adminlogin.title')}</h2>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{t('adminlogin.subtitle')}</p>
+        </div>
 
       <div className="p-6 sm:p-8 space-y-5 fade-in">
         <div>
-          <label className="gov-input-label" htmlFor="adminId">Administrator ID</label>
+          <label htmlFor="adminId">{t('adminlogin.id_label')}</label>
           <input
             id="adminId"
             type="text"
             value={adminId}
             onChange={(e) => setAdminId(e.target.value)}
-            placeholder="Enter Official Admin ID"
+            placeholder={t('adminlogin.id_placeholder')}
             className="gov-input"
           />
         </div>
         
         <div>
-          <label className="gov-input-label" htmlFor="adminPassword">Password</label>
+          <label htmlFor="adminPassword">Password</label>
           <input
             id="adminPassword"
             type="password"
@@ -83,8 +86,8 @@ const AdminLogin = () => {
         </div>
 
         {status.message && (
-          <div className={status.type === 'error' ? 'gov-alert-error' : status.type === 'success' ? 'gov-alert-success' : 'gov-alert-info'}>
-            <strong>Status:</strong> {status.message}
+          <div className={`p-4 border-l-4 rounded-sm ${status.type === 'error' ? 'bg-[#FFF5F5] border-[#C53030] text-[#C53030]' : status.type === 'success' ? 'bg-[#E8F5E9] border-[#138808] text-[#138808]' : 'bg-[#E8EEFF] border-[#0D3B8C] text-[#0D3B8C]'}`}>
+            <strong>{t('voter.status')}</strong> {status.message}
           </div>
         )}
 
@@ -92,11 +95,12 @@ const AdminLogin = () => {
           <button
             onClick={adminLogin}
             disabled={isProcessing}
-            className="gov-button disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-primary w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isProcessing ? 'Authenticating...' : 'Secure Administrator Login'}
+            {isProcessing ? t('voter.processing') : t('adminlogin.login_btn')}
           </button>
         </div>
+      </div>
       </div>
     </div>
   );
