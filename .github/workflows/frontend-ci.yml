@@ -21,8 +21,10 @@ jobs:
         node-version: '20.x'
         cache: 'pnpm'
     - name: Install Dependencies
-      run: pnpm install --frozen-lockfile
+      run: pnpm install --frozen-lockfile --ignore-scripts
     - name: Compile Smart Contracts
       run: npx truffle compile
     - name: Build Frontend
       run: pnpm run build
+    - name: Build JS Bundle
+      run: npx browserify ./src/js/app.js -o ./src/dist/app.bundle.js --ignore cheerio
