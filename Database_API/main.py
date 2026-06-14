@@ -41,7 +41,7 @@ log = logging.getLogger("face-auth")
 # ── Environment ──────────────────────────────────────────────────────────────
 from config import settings
 
-SECRET_KEY: str = settings.SECRET_KEY
+FASTAPI_SECRET_KEY: str = settings.FASTAPI_SECRET_KEY
 JWT_EXPIRY_HOURS: int = settings.JWT_EXPIRY_HOURS
 MATCH_TOLERANCE: float = settings.MATCH_TOLERANCE
 
@@ -306,13 +306,13 @@ def create_jwt(voter_id: str, role: str) -> str:
         "iat": datetime.now(timezone.utc),
         "exp": datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRY_HOURS),
     }
-    return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+    return jwt.encode(payload, FASTAPI_SECRET_KEY, algorithm="HS256")
 
 
 def decode_jwt(token: str) -> dict:
     """Verify and decode a JWT. Raises on invalid/expired tokens."""
     try:
-        return jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        return jwt.decode(token, FASTAPI_SECRET_KEY, algorithms=["HS256"])
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
