@@ -28,6 +28,14 @@ const VoterLogin = () => {
     setStatus({ message: msg, type });
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pastedText = e.clipboardData.getData('text');
+    if (pastedText.length > 64 || !/^[A-Za-z0-9/-]+$/.test(pastedText)) {
+      e.preventDefault();
+      updateStatus("Invalid paste format or length exceeded. Only alphanumeric characters and hyphens/slashes are allowed.", "error");
+    }
+  };
+
   const startWebcam = async () => {
     try {
       updateStatus("Requesting camera access...", "info");
@@ -69,7 +77,12 @@ const VoterLogin = () => {
       const response = await fetch('http://127.0.0.1:8000/verify-face', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ voter_id: voterId, image_base64: base64Image })
+        body: JSON.stringify({ 
+          voter_id: voterId, 
+          image_base64: base64Image,
+          nonce: crypto.randomUUID(),
+          timestamp: Date.now()
+        })
       });
 
       if (response.ok) {
@@ -113,8 +126,11 @@ const VoterLogin = () => {
             type="text"
             value={voterId}
             onChange={(e) => setVoterId(e.target.value)}
+            onPaste={handlePaste}
             placeholder="e.g. VTR-84291"
             className="gov-input"
+            maxLength={64}
+            autoComplete="off"
           />
         </div>
 
