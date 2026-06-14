@@ -69,10 +69,22 @@ const VoterLogin = () => {
     
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const base64Image = canvas.toDataURL('image/jpeg');
 
     setIsProcessing(true);
+    updateStatus("Recording liveness data... Please blink!", "info");
+
+    const frames: string[] = [];
+    const maxFrames = 10;
+    const frameInterval = 150; // ms
+
+    for (let i = 0; i < maxFrames; i++) {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        frames.push(canvas.toDataURL('image/jpeg', 0.7));
+        if (i < maxFrames - 1) {
+            await new Promise(resolve => setTimeout(resolve, frameInterval));
+        }
+    }
+
     updateStatus("Verifying identity securely...", "info");
 
     try {
@@ -81,7 +93,7 @@ const VoterLogin = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           voter_id: voterId, 
-          image_base64: base64Image,
+          images_base64: frames,
           nonce: crypto.randomUUID(),
           timestamp: Date.now()
         })
