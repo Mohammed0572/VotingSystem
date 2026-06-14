@@ -98,8 +98,10 @@ cd VotingSystem
 ```
 
 ### 2. Install Dependencies
-Install the Node.js packages for the frontend:
+Install the Node.js packages for the frontend. You can use either `pnpm` (recommended, as a `pnpm-lock.yaml` exists) or `npm`:
 ```bash
+pnpm install
+# or
 npm install
 ```
 Install the Python packages for the Face Authentication API:
@@ -134,10 +136,18 @@ truffle compile
 truffle migrate
 ```
 
-### 6. Bundle the Frontend JavaScript
-Compile the decentralized app logic:
+### 6. Build or Run the Frontend
+The frontend uses Vite and React. You can either run the development server or build for production.
+
+**For Development (Recommended):**
 ```bash
-npx browserify ./src/js/app.js -o ./src/dist/app.bundle.js
+npm run dev
+```
+
+**For Production:**
+```bash
+npm run build
+npm run serve
 ```
 
 ### 7. Run the Servers
@@ -149,10 +159,35 @@ cd Database_API
 python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-**Terminal 2: Start the Frontend Express Server**
-```bash
-node index.js
-```
+**Terminal 2: Start the Frontend Server**
+If you are using the development server, `npm run dev` is already running. If you built for production, ensure `npm run serve` is running.
 
 ### 8. Access the App
-Open your web browser and go to: **http://localhost:8080**
+Open your web browser and go to: 
+- **http://localhost:5173** (if using `npm run dev`)
+- **http://localhost:8080** (if using `npm run serve`)
+
+---
+
+## Testing
+
+This project includes automated testing suites for the Smart Contracts, Backend API, and Frontend components. 
+
+### 1. Smart Contracts (Truffle)
+The solidity smart contracts are tested using Truffle and Mocha/Chai. Ensure Ganache is running before executing the tests.
+```bash
+npx truffle test
+```
+
+### 2. Backend API (pytest)
+The FastAPI backend is tested using `pytest`. The tests mock the face recognition modules to run quickly without needing real webcam input.
+```bash
+cd Database_API
+pytest
+```
+
+### 3. Frontend (Vitest)
+The React frontend components are tested using Vitest and React Testing Library.
+```bash
+npm run test
+```
