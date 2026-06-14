@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
 
 const VoterLogin = () => {
+  const { t } = useLanguage();
   const [voterId, setVoterId] = useState('');
   
   // Camera state
@@ -112,15 +114,16 @@ const VoterLogin = () => {
   };
 
   return (
-    <div className="gov-panel max-w-md mx-auto overflow-hidden mt-8">
-      <div className="bg-[#f8f5ec] border-b border-[#dfe1e2] p-6 text-center">
-        <h2 className="text-2xl font-bold font-heading">Voter Authentication</h2>
-        <p className="text-sm text-[#565c65] mt-1">Official Citizen Portal</p>
-      </div>
+    <div className="flex-grow flex flex-col items-center justify-center w-full">
+      <div className="gov-panel w-full max-w-md overflow-hidden">
+        <div className="bg-[var(--cream)] border-b border-[var(--border)] p-6 text-center">
+          <h2 className="text-2xl font-bold" style={{ fontFamily: 'var(--font-head)', color: 'var(--ashoka-navy)' }}>{t('voter.title')}</h2>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{t('voter.subtitle')}</p>
+        </div>
 
       <div className="p-6 sm:p-8 space-y-5">
         <div>
-          <label className="gov-input-label" htmlFor="voterId">Voter Identification Number</label>
+          <label htmlFor="voterId">{t('voter.id_label')}</label>
           <input
             id="voterId"
             type="text"
@@ -135,41 +138,42 @@ const VoterLogin = () => {
         </div>
 
         <div>
-          <label className="gov-input-label">Identity Verification (Step 2)</label>
-          <p className="text-sm text-[#565c65] mb-2">Please align your face within the frame to verify your identity.</p>
-          <div className="relative w-full aspect-video bg-[#f8f5ec] overflow-hidden border-2 border-[#dfe1e2] rounded-sm group">
+          <label>{t('voter.step2')}</label>
+          <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>{t('voter.align_face')}</p>
+          <div className="relative w-full aspect-video bg-[var(--cream)] overflow-hidden border-2 border-[var(--border)] rounded-sm group">
             <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]"></video>
             <canvas ref={canvasRef} className="hidden"></canvas>
             {!isCameraActive && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#f8f5ec] text-[#565c65] z-10">
-                <svg className="w-12 h-12 mb-2 text-[#565c65]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                <span className="text-base font-bold">Camera Inactive</span>
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--cream)] z-10" style={{ color: 'var(--text-secondary)' }}>
+                <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                <span className="text-base font-bold">{t('voter.cam_inactive')}</span>
               </div>
             )}
           </div>
         </div>
 
         {status.message && (
-          <div className={status.type === 'error' ? 'gov-alert-error' : status.type === 'success' ? 'gov-alert-success' : 'gov-alert-info'}>
-            <strong>Status:</strong> {status.message}
+          <div className={`p-4 border-l-4 rounded-sm ${status.type === 'error' ? 'bg-[#FFF5F5] border-[#C53030] text-[#C53030]' : status.type === 'success' ? 'bg-[#E8F5E9] border-[#138808] text-[#138808]' : 'bg-[#E8EEFF] border-[#0D3B8C] text-[#0D3B8C]'}`}>
+            <strong>{t('voter.status')}</strong> {status.message}
           </div>
         )}
 
         <div className="flex gap-3 pt-2">
           {!isCameraActive ? (
-            <button onClick={startWebcam} className="gov-button-outline">
-              Enable Camera
+            <button onClick={startWebcam} className="btn-secondary w-full">
+              {t('voter.enable_cam')}
             </button>
           ) : (
             <button
               onClick={verifyVoter}
               disabled={isProcessing}
-              className="gov-button disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-primary w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isProcessing ? 'Processing...' : 'Verify Identity & Login'}
+              {isProcessing ? t('voter.processing') : t('voter.verify_btn')}
             </button>
           )}
         </div>
+      </div>
       </div>
     </div>
   );
