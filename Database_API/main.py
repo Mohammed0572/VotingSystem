@@ -39,25 +39,15 @@ logging.basicConfig(
 log = logging.getLogger("face-auth")
 
 # ── Environment ──────────────────────────────────────────────────────────────
-dotenv.load_dotenv()
+from config import settings
 
-SECRET_KEY: str = os.environ.get("SECRET_KEY", "")
-if not SECRET_KEY:
-    raise RuntimeError(
-        "SECRET_KEY is not set. Copy Database_API/.env.example to .env and configure it."
-    )
+SECRET_KEY: str = settings.SECRET_KEY
+JWT_EXPIRY_HOURS: int = settings.JWT_EXPIRY_HOURS
+MATCH_TOLERANCE: float = settings.MATCH_TOLERANCE
 
-# JWT expiration — default 24 hours for voter sessions
-JWT_EXPIRY_HOURS: int = int(os.environ.get("JWT_EXPIRY_HOURS", "24"))
-
-# Face distance threshold — faces with distance <= this are a match.
-# Lower = stricter.  Standard face_recognition recommendation is 0.6;
-# your system uses 0.5 for stricter matching.
-MATCH_TOLERANCE: float = float(os.environ.get("MATCH_TOLERANCE", "0.5"))
-
-# Path to the Face Recognition encodings pickle file
+# Path to the face-recognition encodings pickle file
 ENCODINGS_PKL_PATH = (
-    Path(__file__).resolve().parent.parent / "Face Recognition" / "encodings.pkl"
+    Path(__file__).resolve().parent.parent / "face-recognition" / "encodings.pkl"
 )
 
 
