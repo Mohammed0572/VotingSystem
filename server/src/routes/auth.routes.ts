@@ -34,7 +34,7 @@ router.post(
 // ── Protected Routes ─────────────────────────────────────
 router.get('/me', authenticate, authController.getMe);
 
-router.post('/refresh', authController.refresh);
+router.post('/refresh', authLimiter, authController.refresh);
 
 export default router;
 
