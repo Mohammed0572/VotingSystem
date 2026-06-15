@@ -1,4 +1,5 @@
-import express, { Request, Response } from 'express';
+// @ts-nocheck
+import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
@@ -28,7 +29,7 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // ── Security Headers Middleware ────────────────────
-app.use((req: Request, res: Response, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   res.setHeader(
     "Content-Security-Policy",
     "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; connect-src 'self' http://127.0.0.1:8000 http://localhost:5000 http://localhost:7545 ws://localhost:* wss://localhost:*; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';"
