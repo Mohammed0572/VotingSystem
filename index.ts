@@ -10,7 +10,7 @@ dotenv.config();
 
 const env = cleanEnv(process.env, {
   PORT: port({ default: 8080 }),
-  SECRET_KEY: str({ default: 'development-secret-key-replace-in-production' }),
+  NODE_SECRET_KEY: str({ default: 'development-secret-key-replace-in-production' }),
 });
 
 const app = express();
