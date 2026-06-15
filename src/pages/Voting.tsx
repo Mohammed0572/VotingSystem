@@ -61,9 +61,23 @@ const Voting = () => {
     }
   };
 
+  // Generate NOTA pseudo-candidate if candidates loaded
+  const displayCandidates = [...candidates];
+  if (candidates.length > 0) {
+    displayCandidates.push({ id: 9999, name: 'NOTA', party: 'None of the Above', voteCount: 0 });
+  }
+
   const handleVote = async () => {
+    if (isVoting || hasVoted) return;
+
     if (!selectedCandidate) {
       setMessage({ text: 'Please select a candidate first.', type: 'error' });
+      return;
+    }
+
+    const isValidCandidate = displayCandidates.some(c => c.id === selectedCandidate);
+    if (!isValidCandidate) {
+      setMessage({ text: 'Invalid candidate selected.', type: 'error' });
       return;
     }
 
@@ -92,11 +106,6 @@ const Voting = () => {
     );
   }
 
-  // Generate NOTA pseudo-candidate if candidates loaded
-  const displayCandidates = [...candidates];
-  if (candidates.length > 0) {
-    displayCandidates.push({ id: 9999, name: 'NOTA', party: 'None of the Above', voteCount: 0 });
-  }
 
   return (
     <div className="w-full">
@@ -188,7 +197,8 @@ const Voting = () => {
             )}
             
             {message.text && !hasVoted && (
-              <div className={`mt-6 p-4 rounded-md font-bold text-center ${message.type === 'error' ? 'bg-[#FFF5F5] text-[#C53030] border border-[#C53030]' : 'bg-[#E8EEFF] text-[#0D3B8C] border border-[#0D3B8C]'}`}>
+              <div className={`mt-6 p-4 rounded-md font-bold text-center flex items-center justify-center gap-3 ${message.type === 'error' ? 'bg-[#FFF5F5] text-[#C53030] border border-[#C53030]' : 'bg-[#E8EEFF] text-[#0D3B8C] border border-[#0D3B8C]'}`}>
+                {isVoting && <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#0D3B8C]"></div>}
                 {message.text}
               </div>
             )}
