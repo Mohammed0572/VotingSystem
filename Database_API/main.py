@@ -383,6 +383,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Security Headers Middleware ─────────────────────────────────────────────
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; connect-src 'self' http://127.0.0.1:8000 http://localhost:5000 http://localhost:7545 ws://localhost:* wss://localhost:*; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';"
+    response.headers["Permissions-Policy"] = "camera=(self), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=()"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    return response
+
 
 # ── Request / Response Schemas ───────────────────────────────────────────
 
