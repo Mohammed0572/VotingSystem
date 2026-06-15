@@ -37,5 +37,5 @@ const authLimiter = rateLimit({
   },
 });
 
-export {  };
+export { globalLimiter, authLimiter };
 

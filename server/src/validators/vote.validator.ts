@@ -27,5 +27,4 @@ const voteStatusSchema = {
   }),
 };
 
-export {  };
-
+export { castVoteSchema, voteStatusSchema };

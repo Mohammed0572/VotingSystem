@@ -55,7 +55,7 @@ Administrators have access to a separate, secure dashboard where they can:
 
 ## Core Security Features
 
-- **Biometric Anti-Spoofing:** You cannot vote using someone else's credentials. The facial recognition system ensures the physical presence of the actual voter.
+- **Facial Recognition Authentication:** You cannot vote using someone else's credentials. The system uses facial recognition to match the voter. *(Note: Active liveness detection/anti-spoofing is currently out of scope for this prototype).*
 - **Immutability:** Because votes are stored on the Ethereum blockchain, they cannot be deleted, modified, or tampered with by anyone—not even the administrators.
 - **No Single Point of Failure:** Unlike traditional centralized databases that can be hacked to alter vote counts, the decentralized nature of the blockchain ensures the voting data is distributed and secure.
 - **Double-Voting Prevention:** The smart contract logic strictly enforces the rule that one person gets exactly one vote. Any attempt to vote twice is automatically rejected by the blockchain network.
@@ -84,6 +84,7 @@ Follow these steps to download and run the project on your local machine.
 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v18+)
+- [pnpm](https://pnpm.io/) (`npm install -g pnpm`)
 - [Python](https://www.python.org/) (v3.10 recommended)
 - [Ganache](https://trufflesuite.com/ganache/) (Local Ethereum blockchain)
 - [MetaMask](https://metamask.io/) browser extension
@@ -98,11 +99,9 @@ cd VotingSystem
 ```
 
 ### 2. Install Dependencies
-Install the Node.js packages for the frontend. You can use either `pnpm` (recommended, as a `pnpm-lock.yaml` exists) or `npm`:
+Install the Node.js packages for the frontend using `pnpm`:
 ```bash
 pnpm install
-# or
-npm install
 ```
 Install the Python packages for the Face Authentication API:
 ```bash
@@ -118,11 +117,11 @@ Copy the example environment files and set them up:
 cp .env.example .env
 cp Database_API/.env.example Database_API/.env
 ```
-Generate a secure secret key by running:
+Generate two unique secure secret keys by running this command twice:
 ```bash
 node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ```
-Place this exact same `SECRET_KEY` inside **both** `.env` files.
+Place one key as `NODE_SECRET_KEY` in the root `.env` file, and the other as `FASTAPI_SECRET_KEY` in `Database_API/.env`.
 
 ### 4. Start the Blockchain (Ganache)
 1. Open **Ganache** and create a new workspace (e.g., named "development").
