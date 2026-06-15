@@ -120,7 +120,7 @@ const Voting = () => {
       </div>
 
       {/* Main content grid */}
-      <div className="main-content !p-0">
+      <div className="main-content p-0!">
         
         {/* Sidebar */}
         <div>
@@ -199,8 +199,8 @@ const Voting = () => {
             {message.text && !hasVoted && (
               <div className={`p-4 border-l-4 rounded-sm mb-6 ${message.type === 'error' ? 'bg-danger-light border-danger text-danger' : 'bg-india-blue-lt border-india-blue text-india-blue'}`}>
                 {isVoting && <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-india-blue"></div>}
-              <div className={`mt-6 p-4 rounded-md font-bold text-center flex items-center justify-center gap-3 ${message.type === 'error' ? 'bg-[#FFF5F5] text-[#C53030] border border-[#C53030]' : 'bg-[#E8EEFF] text-[#0D3B8C] border border-[#0D3B8C]'}`}>
-                {isVoting && <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#0D3B8C]"></div>}
+              <div className={`mt-6 p-4 rounded-md font-bold text-center flex items-center justify-center gap-3 ${message.type === 'error' ? 'bg-[#FFF5F5] text-danger border border-danger' : 'bg-india-blue-lt text-india-blue border border-india-blue'}`}>
+                {isVoting && <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-india-blue"></div>}
                 {message.text}
               </div>
             )}
