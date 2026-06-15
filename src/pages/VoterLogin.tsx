@@ -114,9 +114,9 @@ const VoterLogin = () => {
   };
 
   return (
-    <div className="flex-grow flex flex-col items-center justify-center w-full">
+    <div className="grow flex flex-col items-center justify-center w-full">
       <div className="gov-panel w-full max-w-md overflow-hidden">
-        <div className="bg-[var(--cream)] border-b border-[var(--border)] p-6 text-center">
+        <div className="bg-(--cream) border-b border-(--border) p-6 text-center">
           <h2 className="text-2xl font-bold" style={{ fontFamily: 'var(--font-head)', color: 'var(--ashoka-navy)' }}>{t('voter.title')}</h2>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{t('voter.subtitle')}</p>
         </div>
@@ -140,11 +140,11 @@ const VoterLogin = () => {
         <div>
           <label>{t('voter.step2')}</label>
           <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>{t('voter.align_face')}</p>
-          <div className="relative w-full aspect-video bg-[var(--cream)] overflow-hidden border-2 border-[var(--border)] rounded-sm group">
+          <div className="relative w-full aspect-video bg-(--cream) overflow-hidden border-2 border-(--border) rounded-sm group">
             <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]"></video>
             <canvas ref={canvasRef} className="hidden"></canvas>
             {!isCameraActive && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--cream)] z-10" style={{ color: 'var(--text-secondary)' }}>
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-(--cream) z-10" style={{ color: 'var(--text-secondary)' }}>
                 <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                 <span className="text-base font-bold">{t('voter.cam_inactive')}</span>
               </div>
@@ -153,7 +153,7 @@ const VoterLogin = () => {
         </div>
 
         {status.message && (
-          <div className={`p-4 border-l-4 rounded-sm ${status.type === 'error' ? 'bg-[#FFF5F5] border-[#C53030] text-[#C53030]' : status.type === 'success' ? 'bg-[#E8F5E9] border-[#138808] text-[#138808]' : 'bg-[#E8EEFF] border-[#0D3B8C] text-[#0D3B8C]'}`}>
+          <div className={`p-4 border-l-4 rounded-sm ${status.type === 'error' ? 'bg-[#FFF5F5] border-danger text-danger' : status.type === 'success' ? 'bg-india-green-light border-india-green text-india-green' : 'bg-india-blue-lt border-india-blue text-india-blue'}`}>
             <strong>{t('voter.status')}</strong> {status.message}
           </div>
         )}

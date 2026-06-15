@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 const Contact = () => {
   return (
@@ -11,7 +11,7 @@ const Contact = () => {
       <h1 className="text-3xl font-bold font-heading text-[#112e51] mb-2">Contact Support</h1>
       <p className="text-[#565c65] mb-8">For technical issues, feedback, or general inquiries regarding the pilot voting system, please reach out to our primary point of contact below.</p>
       
-      <div className="bg-[#f8f5ec] p-6 rounded-md inline-block text-left w-full max-w-md border border-[#dfe1e2]">
+      <div className="bg-cream p-6 rounded-md inline-block text-left w-full max-w-md border border-[#dfe1e2]">
         <div className="mb-4">
           <h3 className="text-sm font-bold text-[#565c65] uppercase tracking-wider mb-1">System Administrator</h3>
           <p className="text-xl font-heading text-[#112e51]">Syed Mohammed Naqvi</p>
