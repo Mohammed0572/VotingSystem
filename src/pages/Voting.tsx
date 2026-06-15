@@ -85,9 +85,9 @@ const Voting = () => {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0D3B8C] mb-4"></div>
-        <p className="text-[#4A5568] font-medium">Connecting to Blockchain...</p>
+      <div className="grow flex flex-col items-center justify-center py-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-india-blue mb-4"></div>
+        <p className="text-text-secondary font-medium">Connecting to Blockchain...</p>
       </div>
     );
   }
@@ -157,11 +157,11 @@ const Voting = () => {
           </div>
           <div className="progress-bar"><div className="progress-fill"></div></div>
 
-          <div className="vote-body flex-grow">
+          <div className="vote-body flex-1">
             <h4>Registered Candidates</h4>
             
             {displayCandidates.length === 0 ? (
-              <p className="text-[#4A5568] py-8 text-center">No candidates are currently registered.</p>
+              <p className="text-text-secondary py-8 text-center">No candidates are currently registered.</p>
             ) : (
               displayCandidates.map((candidate, index) => (
                 <div 
@@ -182,13 +182,18 @@ const Voting = () => {
             )}
 
             {hasVoted && (
-              <div className="mt-6 bg-[#E8F5E9] border border-[#138808] p-4 rounded-md text-[#138808] font-bold text-center">
+              <div className="p-4 mb-6 rounded-sm bg-india-green-light border-l-4 border-india-green text-india-green font-bold text-center">
                 ✓ You have successfully cast your official vote.
               </div>
             )}
             
             {message.text && !hasVoted && (
+<<<<<<< Updated upstream
               <div className={`mt-6 p-4 rounded-md font-bold text-center ${message.type === 'error' ? 'bg-[#FFF5F5] text-[#C53030] border border-[#C53030]' : 'bg-[#E8EEFF] text-[#0D3B8C] border border-[#0D3B8C]'}`}>
+=======
+              <div className={`p-4 border-l-4 rounded-sm mb-6 ${message.type === 'error' ? 'bg-danger-light border-danger text-danger' : 'bg-india-blue-lt border-india-blue text-india-blue'}`}>
+                {isVoting && <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-india-blue"></div>}
+>>>>>>> Stashed changes
                 {message.text}
               </div>
             )}
