@@ -41,7 +41,7 @@ log = logging.getLogger("face-auth")
 # ── Environment ──────────────────────────────────────────────────────────────
 from config import settings
 
-SECRET_KEY: str = settings.SECRET_KEY
+FASTAPI_SECRET_KEY: str = settings.FASTAPI_SECRET_KEY
 JWT_EXPIRY_HOURS: int = settings.JWT_EXPIRY_HOURS
 MATCH_TOLERANCE: float = settings.MATCH_TOLERANCE
 
@@ -217,7 +217,14 @@ def get_face_embedding(image: np.ndarray) -> Optional[np.ndarray]:
     Returns:
         np.ndarray of shape (128,) on success, None if no face detected.
     """
-    # face_recognition expects RGB
+    details = get_face_details(image)
+    return details[0] if details else None
+
+
+def get_face_details(image: np.ndarray) -> Optional[tuple[np.ndarray, dict]]:
+    """
+    Extract face embedding and facial landmarks from a BGR image.
+    """
     rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
     # Detect face locations (HOG model for speed)
@@ -237,11 +244,27 @@ def get_face_embedding(image: np.ndarray) -> Optional[np.ndarray]:
 
     # Compute the 128D encoding
     encodings = face_recognition.face_encodings(rgb, face_locations)
-
     if not encodings:
         return None
 
-    return encodings[0]
+    # Get face landmarks for EAR calculation
+    landmarks = face_recognition.face_landmarks(rgb, face_locations)
+    if not landmarks:
+        return None
+
+    return encodings[0], landmarks[0]
+
+def calculate_ear(eye_points: list) -> float:
+    """
+    Calculate the Eye Aspect Ratio (EAR) given 6 facial landmark points for an eye.
+    """
+    # Compute the euclidean distances between the two sets of vertical eye landmarks
+    A = np.linalg.norm(np.array(eye_points[1]) - np.array(eye_points[5]))
+    B = np.linalg.norm(np.array(eye_points[2]) - np.array(eye_points[4]))
+    # Compute the euclidean distance between the horizontal eye landmark
+    C = np.linalg.norm(np.array(eye_points[0]) - np.array(eye_points[3]))
+    # Compute the eye aspect ratio
+    return (A + B) / (2.0 * C)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -283,13 +306,13 @@ def create_jwt(voter_id: str, role: str) -> str:
         "iat": datetime.now(timezone.utc),
         "exp": datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRY_HOURS),
     }
-    return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+    return jwt.encode(payload, FASTAPI_SECRET_KEY, algorithm="HS256")
 
 
 def decode_jwt(token: str) -> dict:
     """Verify and decode a JWT. Raises on invalid/expired tokens."""
     try:
-        return jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        return jwt.decode(token, FASTAPI_SECRET_KEY, algorithms=["HS256"])
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -376,7 +399,14 @@ async def add_security_headers(request, call_next):
 
 class FaceVerifyRequest(BaseModel):
     voter_id: str
-    image_base64: str
+    images_base64: list[str]
+
+    @field_validator("images_base64")
+    @classmethod
+    def must_have_images(cls, v: list[str]) -> list[str]:
+        if not v:
+            raise ValueError("images_base64 must not be empty.")
+        return v
 
     @field_validator("voter_id")
     @classmethod
@@ -427,36 +457,69 @@ async def health():
 @app.post("/verify-face", response_model=AuthResponse)
 async def verify_face(payload: FaceVerifyRequest):
     """
-    Authenticate a voter by comparing a webcam capture against
-    the stored 128D face encoding.
-
-    Flow:
-        1. Decode the Base64 image
-        2. Extract face embedding via dlib ResNet
-        3. Fetch stored encoding from SQLite
-        4. Compare using Euclidean distance (tolerance configured via env)
-        5. If match → issue JWT with expiration
-        6. Otherwise → 401
+    Authenticate a voter by comparing a sequence of webcam captures against
+    the stored 128D face encoding, and ensuring a blink occurred (liveness).
     """
     voter_id = payload.voter_id.strip().lower()
 
-    # Step 1: Decode image
-    try:
-        image = decode_base64_image(payload.image_base64)
-    except ValueError as exc:
+    if len(payload.images_base64) < 2:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid image: {exc}",
+            detail="Liveness detection requires a sequence of images (at least 2).",
         )
 
-    # Step 2: Extract face embedding
-    embedding = get_face_embedding(image)
-    if embedding is None:
+    # Step 1 & 2: Decode images, get embeddings and landmarks
+    frame_details = []
+    for img_b64 in payload.images_base64:
+        try:
+            image = decode_base64_image(img_b64)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid image in sequence: {exc}",
+            )
+        
+        details = get_face_details(image)
+        if details is not None:
+            frame_details.append(details)
+            
+    if not frame_details:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No face detected in the image. Please ensure your face "
-            "is clearly visible and well-lit.",
+            detail="No faces detected in the provided image sequence.",
         )
+
+    # Base encoding is from the first valid frame
+    base_embedding = frame_details[0][0]
+    
+    # Ensure consistent face across all frames
+    ears = []
+    for emb, landmarks in frame_details:
+        match, _ = compare_faces(base_embedding, emb, tolerance=0.4)
+        if not match:
+             raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Multiple different faces or inconsistent face detected across frames.",
+            )
+        
+        # Calculate average EAR for this frame
+        if "left_eye" in landmarks and "right_eye" in landmarks:
+            left_ear = calculate_ear(landmarks["left_eye"])
+            right_ear = calculate_ear(landmarks["right_eye"])
+            ears.append((left_ear + right_ear) / 2.0)
+
+    # Liveness check: detect blink
+    if len(ears) > 1:
+        min_ear = min(ears)
+        max_ear = max(ears)
+        # Typical EAR thresholds: Open eye > 0.25, closed eye < 0.21
+        if min_ear > 0.22 or max_ear < 0.25:
+             raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Liveness check failed. Please blink while verifying.",
+            )
+    
+    embedding = base_embedding
 
     # Step 3: Fetch stored encoding
     with get_db() as conn:
