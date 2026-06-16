@@ -78,40 +78,10 @@ pm2 startup
 
 ## 4. Nginx Reverse Proxy Configuration
 
-You will need Nginx to route traffic to the correct internal services. Create a configuration file at `/etc/nginx/sites-available/voting-system`:
+You will need Nginx to route traffic to the correct internal services. Copy the provided `voting-system.nginx` file to your server's Nginx configuration directory:
 
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    # 1. Serve React Frontend
-    location / {
-        root /path/to/Voting-System/dist;
-        index index.html;
-        try_files $uri $uri/ /index.html; # crucial for React Router
-    }
-
-    # 2. Route to Node.js Backend
-    location /api/ {
-        proxy_pass http://127.0.0.1:8080/; # Adjust port if needed
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    # 3. Route to FastAPI (Face Recognition)
-    location /auth/ {
-        proxy_pass http://127.0.0.1:8000/;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
+```bash
+sudo cp voting-system.nginx /etc/nginx/sites-available/voting-system
 ```
 
 Enable the site and restart Nginx:
