@@ -700,9 +700,13 @@ npm run test
 
 ## Contributors
 
-This system was developed as a Major Project at KSSEM by:
+This system was developed as a Major Project at K.S. School of Engineering and Management by:
 
-- **toxicbishop**
-- **supr1795**
-- **Mohammed0572**
-- **Rohithgaloth**
+- [**toxicbishop**](https://github.com/toxicbishop)
+- [**Mohammed0572**](https://github.com/Mohammed0572)
+- [**supr1795**](https://github.com/supr1795)
+- [**Rohithgaloth**](https://github.com/Rohithgaloth)
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
