@@ -204,3 +204,18 @@ The React frontend components are tested using Vitest and React Testing Library.
 ```bash
 npm run test
 ```
+
+---
+
+## Contributors
+
+Thanks to these wonderful people for their contributions to the Prajatantra e-Voting Platform:
+
+<table>
+  <tr>
+    <td align="center"><a href="https://github.com/toxicbishop"><img src="https://github.com/toxicbishop.png" width="100px;" style="border-radius:50%;" alt=""/><br /><sub><b>toxicbishop</b></sub></a></td>
+    <td align="center"><a href="https://github.com/supr1795"><img src="https://github.com/supr1795.png" width="100px;" style="border-radius:50%;" alt=""/><br /><sub><b>supr1795</b></sub></a></td>
+    <td align="center"><a href="https://github.com/Mohammed0572"><img src="https://github.com/Mohammed0572.png" width="100px;" style="border-radius:50%;" alt=""/><br /><sub><b>Mohammed0572</b></sub></a></td>
+    <td align="center"><a href="https://github.com/Rohithgaloth"><img src="https://github.com/Rohithgaloth.png" width="100px;" style="border-radius:50%;" alt=""/><br /><sub><b>Rohithgaloth</b></sub></a></td>
+  </tr>
+</table>
