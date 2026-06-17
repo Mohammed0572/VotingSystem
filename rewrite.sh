@@ -17,3 +17,4 @@ if [ "$GIT_COMMITTER_NAME" = "github-advanced-security[bot]" ]; then
     export GIT_COMMITTER_EMAIL="Rohithgaloth@users.noreply.github.com"
 fi
 ' --tag-name-filter cat -- --all
+#
