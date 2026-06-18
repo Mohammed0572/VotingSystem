@@ -3,16 +3,21 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import VoterLogin from './VoterLogin';
 import { BrowserRouter } from 'react-router-dom';
 
-// Mock language context translations to simplify tests
-vi.mock('../context/LanguageContext', async (importOriginal) => {
-  const actual = await importOriginal();
-  return {
-    ...actual as any,
-    useLanguage: () => ({
-      t: (key: string) => key,
-    }),
-  };
-});
+// Mock Language Context
+vi.mock('../context/LanguageContext', () => ({
+  useLanguage: () => ({
+    t: (key: string) => key,
+  }),
+}));
+
+// Mock Auth Context
+const mockAuth = {
+  setAuth: vi.fn(),
+};
+
+vi.mock('../context/AuthContext', () => ({
+  useAuth: () => mockAuth,
+}));
 
 // Mock AuthContext
 vi.mock('../context/AuthContext', () => ({
