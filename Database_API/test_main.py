@@ -6,6 +6,7 @@ import numpy as np
 
 # Set required environment variable before importing main
 os.environ["FASTAPI_SECRET_KEY"] = "supersecretkey"
+os.environ["ADMIN_PASSWORD"] = "securepassword123"
 
 import main
 from main import app, get_db
@@ -27,11 +28,9 @@ def setup_database():
     # Seed the admin user manually to bypass lifespan
     with get_db() as conn:
         cursor = conn.cursor()
-        dummy_encoding = np.zeros(128).tolist()
-        import json
         cursor.execute(
-            "INSERT INTO voters (voter_id, role, face_encoding) VALUES (?, ?, ?)",
-            ("admin", "admin", json.dumps(dummy_encoding)),
+            "INSERT INTO admins (admin_id, password_hash) VALUES (?, ?)",
+            ("admin", main.get_password_hash("securepassword123")),
         )
         conn.commit()
         
@@ -88,7 +87,8 @@ def test_verify_face_success(mock_ear, mock_compare, mock_details):
             json={"voter_id": "voter_1", "images_base64": [DUMMY_IMAGE, DUMMY_IMAGE]}
         )
         assert response.status_code == 200
-        assert "token" in response.json()
+        assert "auth_token" in response.cookies
+        assert response.cookies["auth_token"] is not None
         assert response.json()["voter_id"] == "voter_1"
 
 def test_enroll_requires_admin():
@@ -129,4 +129,22 @@ def test_verify_face_rate_limiting():
         )
         assert response.status_code == 429
         assert "Too many requests" in response.json()["detail"]
+
+
+def test_admin_login():
+    with TestClient(app) as client:
+        # Valid login
+        response = client.post(
+            "/admin-login",
+            json={"username": "admin", "password": "securepassword123"}
+        )
+        assert response.status_code == 200
+        assert "auth_token" in response.cookies
+
+        # Invalid login
+        response = client.post(
+            "/admin-login",
+            json={"username": "admin", "password": "wrongpassword"}
+        )
+        assert response.status_code == 401
 
