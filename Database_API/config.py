@@ -6,7 +6,7 @@ Add new settings here — never use os.getenv() directly in main.py.
 """
 
 from pydantic_settings import BaseSettings, SettingsConfigDict  # pyright: ignore[reportMissingImports]
-from pydantic import field_validator
+from pydantic import field_validator # type: ignore
 
 
 class Settings(BaseSettings):
