@@ -10,5 +10,6 @@
   },
   "tailwindCSS.experimental.classRegex": [
     ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
-  ]
+  ],
+  "python.defaultInterpreterPath": "${workspaceFolder}/Database_API/.venv/Scripts/python.exe"
 }
