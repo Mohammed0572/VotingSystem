@@ -14,12 +14,15 @@ const Admin = () => {
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState({ message: '', type: '' });
   const navigate = useNavigate();
+  const { session, isCheckingSession } = useAuth();
 
   useEffect(() => {
-    if (!role || role !== 'admin') {
-      navigate('/admin-login');
+    // Check for admin token via AuthContext
+    if (isCheckingSession) return;
+    if (!session || session.role !== 'admin') {
+      navigate('/');
     }
-  }, [role, navigate]);
+  }, [navigate, session, isCheckingSession]);
 
   const updateStatus = (msg: string, type: string) => {
     setStatus({ message: msg, type });

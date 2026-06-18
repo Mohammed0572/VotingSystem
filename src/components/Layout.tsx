@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 const Layout = () => {
   const location = useLocation();
   const { setLang, t } = useLanguage();
-  const { role, logout } = useAuth();
+  const { session, logout } = useAuth();
   const [showLangMenu, setShowLangMenu] = useState(false);
 
   return (
@@ -27,15 +27,15 @@ const Layout = () => {
       <div className="gov-nav flex w-full">
         <div className="flex-1 flex items-center">
           {/* Left side, empty when not logged in to balance the right side */}
-          {role === 'user' && (
+          {session && session.role === 'user' && (
             <Link to="/voting" className={location.pathname === '/voting' ? 'active' : ''}>{t('layout.cast_vote')}</Link>
           )}
-          {role === 'admin' && (
+          {session && session.role === 'admin' && (
             <Link to="/admin" className={location.pathname === '/admin' ? 'active' : ''}>{t('layout.admin')}</Link>
           )}
         </div>
 
-        {!role && (
+        {!session && (
           <div className="flex justify-center items-center">
             <Link to="/" className={location.pathname === '/' ? 'active' : ''}>{t('layout.voter_portal')}</Link>
             <Link to="/admin-login" className={location.pathname === '/admin-login' ? 'active' : ''}>{t('layout.admin_login')}</Link>
@@ -43,7 +43,7 @@ const Layout = () => {
         )}
 
         <div className="flex-1 flex justify-end items-center">
-        {role && (
+        {session && (
           <button 
             onClick={async () => {
               await logout();
