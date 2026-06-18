@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import VoterLogin from './VoterLogin';
 import { BrowserRouter } from 'react-router-dom';
 
@@ -17,6 +17,16 @@ const mockAuth = {
 
 vi.mock('../context/AuthContext', () => ({
   useAuth: () => mockAuth,
+}));
+
+// Mock AuthContext
+vi.mock('../context/AuthContext', () => ({
+  useAuth: () => ({
+    role: null,
+    voter_id: null,
+    setAuth: vi.fn(),
+    logout: vi.fn(),
+  })
 }));
 
 describe('VoterLogin Component', () => {

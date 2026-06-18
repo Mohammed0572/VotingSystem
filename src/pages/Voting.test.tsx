@@ -2,6 +2,16 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Voting from './Voting';
 import { BrowserRouter } from 'react-router-dom';
+import { useWeb3 } from '../context/Web3Context';
+const { mockContract } = vi.hoisted(() => ({
+  mockContract: {
+    getDates: vi.fn(),
+    getCountCandidates: vi.fn(),
+    getCandidate: vi.fn(),
+    checkVote: vi.fn(),
+    vote: vi.fn(),
+  }
+}));
 
 const mockWeb3State = vi.hoisted(() => ({
   account: '0x123',
