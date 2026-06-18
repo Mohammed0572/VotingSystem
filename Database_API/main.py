@@ -327,7 +327,7 @@ def calculate_ear(eye_points: list) -> float:
     A = np.linalg.norm(np.array(eye_points[1]) - np.array(eye_points[5]))
     B = np.linalg.norm(np.array(eye_points[2]) - np.array(eye_points[4]))
     C = np.linalg.norm(np.array(eye_points[0]) - np.array(eye_points[3]))
-    return (A + B) / (2.0 * C)
+    return float((A + B) / (2.0 * C))
 
 
 def compare_faces(
@@ -438,7 +438,7 @@ app.state.limiter = limiter
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
     log.warning(
         "[RATE LIMIT] %s blocked on %s — limit: %s",
-        request.client.host,
+        request.client.host if request.client else "unknown",
         request.url.path,
         exc.detail,
     )
@@ -516,31 +516,6 @@ class EnrollRequest(BaseModel):
             raise ValueError("voter_id must be 100 characters or fewer.")
         return cleaned
 
-
-# ═══════════════════════════════════════════════════════════════════════════
-# AUTH SESSION ENDPOINTS
-# ═══════════════════════════════════════════════════════════════════════════
-
-@app.get("/auth/me")
-async def auth_me(request: Request):
-    """Return session info from the HttpOnly cookie (used by frontend to hydrate auth state)."""
-    token = request.cookies.get("auth_token")
-    if not token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    payload = decode_jwt(token)
-    return {"role": payload.get("role"), "voter_id": payload.get("voter_id")}
-
-
-@app.post("/auth/logout")
-async def auth_logout(response: Response):
-    """Clear the auth cookie."""
-    response.delete_cookie(
-        key="auth_token",
-        httponly=True,
-        secure=True,
-        samesite="strict",
-    )
-    return {"message": "Logged out"}
 
 
 @app.post("/auth/refresh")
@@ -792,7 +767,7 @@ async def auth_logout(request: Request):
     """
     response = JSONResponse(content={"message": "Logged out successfully."})
     response.delete_cookie(key=_COOKIE_NAME, path="/", samesite="strict")
-    log.info("[AUTH] Logout — cookie cleared for %s", request.client.host)
+    log.info("[AUTH] Logout — cookie cleared for %s", request.client.host if request.client else "unknown")
     return response
 
 
