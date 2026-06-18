@@ -5,7 +5,7 @@ from unittest.mock import patch
 import numpy as np
 
 # Set required environment variable before importing main
-os.environ["SECRET_KEY"] = "supersecretkey"
+os.environ["FASTAPI_SECRET_KEY"] = "supersecretkey"
 
 import main
 from main import app, get_db
@@ -52,8 +52,7 @@ def test_health():
         assert response.json()["status"] == "ok"
 
 @patch("main.get_face_embedding")
-@patch("main._sync_to_pkl") # Avoid writing to disk
-def test_enroll_face_success(mock_sync, mock_embed):
+def test_enroll_face_success(mock_embed):
     mock_embed.return_value = np.ones(128)
     
     with TestClient(app) as client:
@@ -63,13 +62,12 @@ def test_enroll_face_success(mock_sync, mock_embed):
             headers={"Authorization": f"Bearer {get_admin_token()}"}
         )
         assert response.status_code == 201
-        assert response.json()["voter_id"] == "test_user"
+        assert "enrolled successfully" in response.json()["message"]
 
 @patch("main.get_face_details")
 @patch("main.compare_faces")
-@patch("main._sync_to_pkl")
 @patch("main.calculate_ear")
-def test_verify_face_success(mock_ear, mock_sync, mock_compare, mock_details):
+def test_verify_face_success(mock_ear, mock_compare, mock_details):
     # Return embedding and dummy landmarks
     mock_details.return_value = (np.ones(128), {"left_eye": [], "right_eye": []})
     mock_compare.return_value = (True, 0.0)
@@ -111,10 +109,24 @@ def test_enroll_requires_admin():
         )
         assert response2.status_code == 403
 
-def test_verify_token():
+def test_verify_face_rate_limiting():
+    # Reset the rate limiter storage to start fresh
+    if hasattr(app.state, "limiter") and app.state.limiter._storage:
+        app.state.limiter._storage.reset()
+
     with TestClient(app) as client:
-        token = main.create_jwt("voter_2", "user")
-        response = client.get("/verify-token", headers={"Authorization": f"Bearer {token}"})
-        assert response.status_code == 200
-        assert response.json()["valid"] == True
-        assert response.json()["voter_id"] == "voter_2"
+        # The limit is 5 per minute. Send 5 requests (which should bypass validation but fail on face detection, still triggering the limit)
+        for _ in range(5):
+            response = client.post(
+                "/verify-face",
+                json={"voter_id": "test_user", "images_base64": [DUMMY_IMAGE, DUMMY_IMAGE]}
+            )
+            assert response.status_code != 429
+        # The 6th request must trigger a 429 Too Many Requests response
+        response = client.post(
+            "/verify-face",
+            json={"voter_id": "test_user", "images_base64": [DUMMY_IMAGE, DUMMY_IMAGE]}
+        )
+        assert response.status_code == 429
+        assert "Too many requests" in response.json()["detail"]
+
