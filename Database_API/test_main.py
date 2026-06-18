@@ -88,7 +88,8 @@ def test_verify_face_success(mock_ear, mock_compare, mock_details):
             json={"voter_id": "voter_1", "images_base64": [DUMMY_IMAGE, DUMMY_IMAGE]}
         )
         assert response.status_code == 200
-        assert "token" in response.json()
+        assert "auth_token" in response.cookies
+        assert response.cookies["auth_token"] is not None
         assert response.json()["voter_id"] == "voter_1"
 
 def test_enroll_requires_admin():
