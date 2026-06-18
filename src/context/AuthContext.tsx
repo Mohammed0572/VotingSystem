@@ -1,89 +1,93 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  ReactNode,
+} from 'react';
 
-interface AuthState {
-  role: string | null;
-  voter_id: string | null;
-  isLoading: boolean;
+const API_BASE = 'http://127.0.0.1:8000';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface AuthSession {
+  voter_id: string;
+  role: 'user' | 'admin' | string;
 }
 
-interface AuthContextType extends AuthState {
-  setAuth: (role: string, voter_id: string) => void;
+interface AuthContextValue {
+  /** Null while the initial /auth/me check is in-flight or not authenticated. */
+  session: AuthSession | null;
+  /** True only while the initial session-restore fetch is pending. */
+  isCheckingSession: boolean;
+  /** Call after a successful /verify-face response to populate the session. */
+  setAuth: (session: AuthSession) => void;
+  /** Calls POST /auth/logout to clear the HttpOnly cookie, then clears local state. */
   logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// ─── Context ──────────────────────────────────────────────────────────────────
 
-const API_BASE = 'http://127.0.0.1:8000';
-const REFRESH_INTERVAL_MS = 10 * 60 * 1000; // Refresh every 10 minutes
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+// ─── Provider ─────────────────────────────────────────────────────────────────
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [state, setState] = useState<AuthState>({
-    role: null,
-    voter_id: null,
-    isLoading: true,
-  });
+  const [session, setSession] = useState<AuthSession | null>(null);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
 
-  // Hydrate session from cookie on mount
+  // On mount: try to restore an existing session from the HttpOnly cookie.
   useEffect(() => {
-    fetch(`${API_BASE}/auth/me`, { credentials: 'include' })
-      .then(res => {
-        if (!res.ok) throw new Error('Not authenticated');
-        return res.json();
-      })
-      .then(data => {
-        setState({ role: data.role, voter_id: data.voter_id, isLoading: false });
-      })
-      .catch(() => {
-        setState({ role: null, voter_id: null, isLoading: false });
-      });
+    let cancelled = false;
+    const checkSession = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/auth/me`, {
+          method: 'GET',
+          credentials: 'include', // send the HttpOnly cookie
+        });
+        if (!cancelled && res.ok) {
+          const data = await res.json();
+          setSession({ voter_id: data.voter_id, role: data.role });
+        }
+      } catch {
+        // Network error or backend down — treat as unauthenticated
+      } finally {
+        if (!cancelled) setIsCheckingSession(false);
+      }
+    };
+    checkSession();
+    return () => { cancelled = true; };
   }, []);
 
-  // Auto-refresh token while authenticated
-  useEffect(() => {
-    if (!state.role) return;
-
-    const interval = setInterval(() => {
-      fetch(`${API_BASE}/auth/refresh`, {
-        method: 'POST',
-        credentials: 'include',
-      })
-        .then(res => {
-          if (!res.ok) throw new Error('Refresh failed');
-          return res.json();
-        })
-        .then(data => {
-          setState(prev => ({ ...prev, role: data.role, voter_id: data.voter_id }));
-        })
-        .catch(() => {
-          // Token expired or invalid — clear session
-          setState({ role: null, voter_id: null, isLoading: false });
-        });
-    }, REFRESH_INTERVAL_MS);
-
-    return () => clearInterval(interval);
-  }, [state.role]);
-
-  const setAuth = useCallback((role: string, voter_id: string) => {
-    setState({ role, voter_id, isLoading: false });
+  const setAuth = useCallback((newSession: AuthSession) => {
+    setSession(newSession);
   }, []);
 
   const logout = useCallback(async () => {
-    await fetch(`${API_BASE}/auth/logout`, {
-      method: 'POST',
-      credentials: 'include',
-    }).catch(() => {});
-    setState({ role: null, voter_id: null, isLoading: false });
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch {
+      // Even if the request fails, clear client-side state
+    } finally {
+      setSession(null);
+    }
   }, []);
 
   return (
-    <AuthContext.Provider value={{ ...state, setAuth, logout }}>
+    <AuthContext.Provider value={{ session, isCheckingSession, setAuth, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => {
+// ─── Hook ─────────────────────────────────────────────────────────────────────
+
+export const useAuth = (): AuthContextValue => {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
+  if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');
   return ctx;
 };
