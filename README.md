@@ -78,6 +78,41 @@ Administrators have access to a separate, secure dashboard where they can:
 
 ---
 
+## CodeQL Security Scan Status
+
+The project utilizes GitHub's automated **CodeQL analysis** to continuously scan the codebase for security vulnerabilities, code quality issues, and compliance.
+
+### Latest Scan Status
+- **Status:** [![CodeQL](https://github.com/Mohammed0572/VotingSystem/actions/workflows/codeql.yml/badge.svg)](https://github.com/Mohammed0572/VotingSystem/actions/workflows/codeql.yml) (Passing / Clean)
+- **Coverage:** Scans both **JavaScript/TypeScript** (Frontend & Express App) and **Python** (FastAPI Authentication Server) codebases.
+- **Trigger:** Automated analysis is performed on every push to the `main` branch, pull requests, and scheduled weekly (every Sunday at 01:30 UTC).
+
+### Security Review Outcomes & Resolved Issues
+In recent security remediation cycles, all identified vulnerabilities have been systematically resolved:
+
+1. **Authentication Security & Secret Management**
+   - **Remediation:** Split configuration secrets into unique client-side (`NODE_SECRET_KEY`) and server-side (`FASTAPI_SECRET_KEY`) JWT signing secrets.
+   - **Production Hardening:** Integrated `envalid` to validate required environment variables at startup, disabling dangerous fallback defaults in production.
+2. **Brute-Force & Denial of Service (DoS) Mitigation**
+   - **Rate Limiting:** Integrated `slowapi` (backed by Redis with an in-memory fallback for local dev) on the FastAPI face authentication endpoints. `/verify-face` is rate-limited to 5 requests per minute per IP, and `/enroll-face` is limited to 10 requests per minute per IP.
+   - **Payload Size Guards:** Implemented strict request payload limits (maximum of 2MB per image sequence) to block memory-exhaustion DoS attacks.
+3. **Input Sanitization & Injection Prevention**
+   - **Form Field Safety:** Implemented strict `maxLength={64}` limits and disabled auto-completion on Login views.
+   - **Regex Restraints:** Added paste listeners (`handlePaste`) to reject non-alphanumeric inputs or values exceeding length limits.
+   - **Vote Integrity:** Enforced candidate verification checks on vote submissions in the frontend, preventing attempts to inject invalid candidate IDs.
+   - **Unused Code Cleanup:** Completely removed the experimental MongoDB backend (`server/` directory) to reduce the attack surface and eliminate potential NoSQL injection vectors.
+4. **Replay & Side-Channel Protections**
+   - **Anti-Replay Nonces:** Added cryptographic random UUID nonces and timestamps to verification requests to block capture-and-replay exploitation.
+   - **Information Disclosure Mitigation:** Removed the face-matching proximity `distance` score from the public `/verify-face` response payload to prevent side-channel reverse-engineering of user faces.
+5. **Secure Headers & Strict CORS**
+   - **Response Hardening:** Added middleware to both Express and FastAPI servers to set strict `Content-Security-Policy` (CSP), `Permissions-Policy` (camera enabled only for self, microphone/geolocation disabled), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and `Referrer-Policy` headers.
+   - **Origin Restriction:** Configured CORS origins on the FastAPI server to strictly allow only the specified frontend origin.
+
+### Outstanding Findings
+- **None:** There are currently no outstanding security alerts or vulnerabilities detected by CodeQL.
+
+---
+
 ## Project Structure
 
 ```text
