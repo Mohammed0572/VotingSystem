@@ -1,10 +1,12 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
 const Layout = () => {
   const location = useLocation();
   const { setLang, t } = useLanguage();
+  const { role, logout } = useAuth();
   const [showLangMenu, setShowLangMenu] = useState(false);
 
   return (
@@ -25,15 +27,15 @@ const Layout = () => {
       <div className="gov-nav flex w-full">
         <div className="flex-1 flex items-center">
           {/* Left side, empty when not logged in to balance the right side */}
-          {localStorage.getItem('auth_token') && (
+          {role === 'user' && (
             <Link to="/voting" className={location.pathname === '/voting' ? 'active' : ''}>{t('layout.cast_vote')}</Link>
           )}
-          {localStorage.getItem('adminToken') && (
+          {role === 'admin' && (
             <Link to="/admin" className={location.pathname === '/admin' ? 'active' : ''}>{t('layout.admin')}</Link>
           )}
         </div>
 
-        {(!localStorage.getItem('auth_token') && !localStorage.getItem('adminToken')) && (
+        {!role && (
           <div className="flex justify-center items-center">
             <Link to="/" className={location.pathname === '/' ? 'active' : ''}>{t('layout.voter_portal')}</Link>
             <Link to="/admin-login" className={location.pathname === '/admin-login' ? 'active' : ''}>{t('layout.admin_login')}</Link>
@@ -41,11 +43,10 @@ const Layout = () => {
         )}
 
         <div className="flex-1 flex justify-end items-center">
-        {(localStorage.getItem('auth_token') || localStorage.getItem('adminToken')) && (
+        {role && (
           <button 
-            onClick={() => {
-              localStorage.removeItem('auth_token');
-              localStorage.removeItem('adminToken');
+            onClick={async () => {
+              await logout();
               window.location.href = '/';
             }} 
             className="lang-btn"

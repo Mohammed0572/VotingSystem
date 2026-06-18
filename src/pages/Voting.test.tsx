@@ -2,23 +2,28 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Voting from './Voting';
 import { BrowserRouter } from 'react-router-dom';
+import { useWeb3 } from '../context/Web3Context';
+const { mockContract } = vi.hoisted(() => ({
+  mockContract: {
+    getDates: vi.fn(),
+    getCountCandidates: vi.fn(),
+    getCandidate: vi.fn(),
+    checkVote: vi.fn(),
+    vote: vi.fn(),
+  }
+}));
 
 // Mock Web3 Context
-const mockContract = {
-  getDates: vi.fn(),
-  getCountCandidates: vi.fn(),
-  getCandidate: vi.fn(),
-  checkVote: vi.fn(),
-  vote: vi.fn(),
-};
-
-vi.mock('../context/Web3Context', () => ({
-  useWeb3: () => ({
-    account: '0x123',
-    contract: mockContract,
-    isLoading: false,
-  }),
-}));
+vi.mock('../context/Web3Context', () => {
+  return {
+    useWeb3: vi.fn().mockReturnValue({
+      account: '0x123',
+      contract: mockContract,
+      isLoading: false,
+      web3: null,
+    }),
+  };
+});
 
 // Mock Language Context
 vi.mock('../context/LanguageContext', () => ({
@@ -27,10 +32,20 @@ vi.mock('../context/LanguageContext', () => ({
   }),
 }));
 
+// Mock AuthContext
+vi.mock('../context/AuthContext', () => ({
+  useAuth: () => ({
+    role: 'user',
+    voter_id: 'VTR-123',
+    setAuth: vi.fn(),
+    logout: vi.fn(),
+  }),
+}));
+
 describe('Voting Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.setItem('auth_token', 'fake-token'); // Bypass redirect
+    vi.clearAllMocks();
   });
 
   const renderComponent = () => {
@@ -42,10 +57,11 @@ describe('Voting Component', () => {
   };
 
   it('renders loading state initially', () => {
-    vi.mocked(require('../context/Web3Context').useWeb3).mockReturnValueOnce({
+    vi.mocked(useWeb3).mockReturnValueOnce({
       account: '0x123',
       contract: null,
       isLoading: true,
+      web3: null,
     });
     renderComponent();
     expect(screen.getByText('Connecting to Blockchain...')).toBeInTheDocument();
