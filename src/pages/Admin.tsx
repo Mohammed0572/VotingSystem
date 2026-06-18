@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 
 const Admin = () => {
   const { t } = useLanguage();
+  const { role } = useAuth();
   const { account, contract, isLoading } = useWeb3();
   const [candidateName, setCandidateName] = useState('');
   const [candidateParty, setCandidateParty] = useState('');

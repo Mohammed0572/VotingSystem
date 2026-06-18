@@ -109,11 +109,12 @@ const VoterLogin = () => {
         // We just update React state with the non-sensitive session info.
         setAuth({ voter_id: data.voter_id, role: data.role });
         
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop());
-        }
-        
-        setTimeout(() => navigate('/voting'), 1500);
+        setTimeout(() => {
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+          }
+          navigate('/voting');
+        }, 1500);
       } else if (response.status === 401) {
         updateStatus("Face mismatch or Voter ID not found.", "error");
         setIsProcessing(false);

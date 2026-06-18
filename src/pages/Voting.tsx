@@ -13,6 +13,7 @@ interface Candidate {
 
 const Voting = () => {
   const { t } = useLanguage();
+  const { role } = useAuth();
   const { account, contract, isLoading } = useWeb3();
   const { session, isCheckingSession } = useAuth();
   const [candidates, setCandidates] = useState<Candidate[]>([]);
