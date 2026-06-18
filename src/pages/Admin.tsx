@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
 const Admin = () => {
   const { t } = useLanguage();
@@ -12,14 +13,15 @@ const Admin = () => {
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState({ message: '', type: '' });
   const navigate = useNavigate();
+  const { session, isCheckingSession } = useAuth();
 
   useEffect(() => {
-    // Check for admin token
-    const token = localStorage.getItem('adminToken');
-    if (!token) {
+    // Check for admin token via AuthContext
+    if (isCheckingSession) return;
+    if (!session || session.role !== 'admin') {
       navigate('/');
     }
-  }, [navigate]);
+  }, [navigate, session, isCheckingSession]);
 
   const updateStatus = (msg: string, type: string) => {
     setStatus({ message: msg, type });
