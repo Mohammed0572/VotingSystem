@@ -13,17 +13,21 @@ const { mockContract } = vi.hoisted(() => ({
   }
 }));
 
-// Mock Web3 Context
-vi.mock('../context/Web3Context', () => {
-  return {
-    useWeb3: vi.fn().mockReturnValue({
-      account: '0x123',
-      contract: mockContract,
-      isLoading: false,
-      web3: null,
-    }),
-  };
-});
+const mockWeb3State = vi.hoisted(() => ({
+  account: '0x123',
+  contract: {
+    getDates: vi.fn(),
+    getCountCandidates: vi.fn(),
+    getCandidate: vi.fn(),
+    checkVote: vi.fn(),
+    vote: vi.fn(),
+  },
+  isLoading: false,
+}));
+
+vi.mock('../context/Web3Context', () => ({
+  useWeb3: () => mockWeb3State,
+}));
 
 // Mock Language Context
 vi.mock('../context/LanguageContext', () => ({
@@ -32,19 +36,18 @@ vi.mock('../context/LanguageContext', () => ({
   }),
 }));
 
-// Mock AuthContext
+// Mock Auth Context
+const mockAuth = {
+  session: { role: 'user', voter_id: 'test' },
+  isCheckingSession: false,
+};
+
 vi.mock('../context/AuthContext', () => ({
-  useAuth: () => ({
-    role: 'user',
-    voter_id: 'VTR-123',
-    setAuth: vi.fn(),
-    logout: vi.fn(),
-  }),
+  useAuth: () => mockAuth,
 }));
 
 describe('Voting Component', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
     vi.clearAllMocks();
   });
 
@@ -57,21 +60,21 @@ describe('Voting Component', () => {
   };
 
   it('renders loading state initially', () => {
-    vi.mocked(useWeb3).mockReturnValueOnce({
-      account: '0x123',
-      contract: null,
-      isLoading: true,
-      web3: null,
-    });
+    mockWeb3State.isLoading = true;
+    mockWeb3State.contract = null as any;
     renderComponent();
     expect(screen.getByText('Connecting to Blockchain...')).toBeInTheDocument();
   });
 
   it('loads candidates from contract', async () => {
-    mockContract.getDates.mockResolvedValue([{ toNumber: () => Math.floor(Date.now() / 1000) }, { toNumber: () => Math.floor(Date.now() / 1000) + 86400 }]);
-    mockContract.getCountCandidates.mockResolvedValue({ toNumber: () => 1 });
-    mockContract.getCandidate.mockResolvedValue([{ toNumber: () => 1 }, 'Alice', 'Party A', { toNumber: () => 0 }]);
-    mockContract.checkVote.mockResolvedValue(false);
+    mockWeb3State.isLoading = false;
+    mockWeb3State.contract = {
+      getDates: vi.fn().mockResolvedValue([{ toNumber: () => Math.floor(Date.now() / 1000) }, { toNumber: () => Math.floor(Date.now() / 1000) + 86400 }]),
+      getCountCandidates: vi.fn().mockResolvedValue({ toNumber: () => 1 }),
+      getCandidate: vi.fn().mockResolvedValue([{ toNumber: () => 1 }, 'Alice', 'Party A', { toNumber: () => 0 }]),
+      checkVote: vi.fn().mockResolvedValue(false),
+      vote: vi.fn(),
+    };
 
     renderComponent();
 
@@ -82,9 +85,14 @@ describe('Voting Component', () => {
   });
 
   it('shows success message if user has already voted', async () => {
-    mockContract.getDates.mockResolvedValue([{ toNumber: () => Math.floor(Date.now() / 1000) }, { toNumber: () => Math.floor(Date.now() / 1000) + 86400 }]);
-    mockContract.getCountCandidates.mockResolvedValue({ toNumber: () => 0 });
-    mockContract.checkVote.mockResolvedValue(true);
+    mockWeb3State.isLoading = false;
+    mockWeb3State.contract = {
+      getDates: vi.fn().mockResolvedValue([{ toNumber: () => Math.floor(Date.now() / 1000) }, { toNumber: () => Math.floor(Date.now() / 1000) + 86400 }]),
+      getCountCandidates: vi.fn().mockResolvedValue({ toNumber: () => 0 }),
+      getCandidate: vi.fn(),
+      checkVote: vi.fn().mockResolvedValue(true),
+      vote: vi.fn(),
+    };
 
     renderComponent();
 
@@ -94,11 +102,15 @@ describe('Voting Component', () => {
   });
 
   it('allows voting workflow', async () => {
-    mockContract.getDates.mockResolvedValue([{ toNumber: () => Math.floor(Date.now() / 1000) }, { toNumber: () => Math.floor(Date.now() / 1000) + 86400 }]);
-    mockContract.getCountCandidates.mockResolvedValue({ toNumber: () => 1 });
-    mockContract.getCandidate.mockResolvedValue([{ toNumber: () => 1 }, 'Alice', 'Party A', { toNumber: () => 0 }]);
-    mockContract.checkVote.mockResolvedValue(false);
-    mockContract.vote.mockResolvedValue(true);
+    mockWeb3State.isLoading = false;
+    const mockVote = vi.fn().mockResolvedValue(true);
+    mockWeb3State.contract = {
+      getDates: vi.fn().mockResolvedValue([{ toNumber: () => Math.floor(Date.now() / 1000) }, { toNumber: () => Math.floor(Date.now() / 1000) + 86400 }]),
+      getCountCandidates: vi.fn().mockResolvedValue({ toNumber: () => 1 }),
+      getCandidate: vi.fn().mockResolvedValue([{ toNumber: () => 1 }, 'Alice', 'Party A', { toNumber: () => 0 }]),
+      checkVote: vi.fn().mockResolvedValue(false),
+      vote: mockVote,
+    };
 
     renderComponent();
 
@@ -118,7 +130,7 @@ describe('Voting Component', () => {
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockContract.vote).toHaveBeenCalledWith(1, { from: '0x123' });
+      expect(mockVote).toHaveBeenCalledWith(1, { from: '0x123' });
     });
   });
 });
