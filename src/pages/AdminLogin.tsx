@@ -35,23 +35,24 @@ const AdminLogin = () => {
     updateStatus("Authenticating...", "info");
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/verify-face', {
+      const response = await fetch('http://127.0.0.1:8000/admin-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // allow browser to store the HttpOnly cookie
         body: JSON.stringify({ 
-          voter_id: adminId, 
-          image_base64: adminPassword,
-          nonce: crypto.randomUUID(),
-          timestamp: Date.now()
+          username: adminId, 
+          password: adminPassword,
         })
       });
 
       if (response.ok) {
         const data = await response.json();
         if (data.role === 'admin') {
-          updateStatus("Login Successful! Redirecting...", "success");
-          setAuth(data.role, data.voter_id);
-          setTimeout(() => navigate('/admin'), 1500);
+          updateStatus("Authentication successful. Redirecting...", "success");
+          // Token is now stored in an HttpOnly cookie by the backend.
+          // We just update React state with the non-sensitive session info.
+          setAuth({ voter_id: data.voter_id, role: data.role });
+          setTimeout(() => navigate('/admin'), 1000);
         } else {
           updateStatus("Access denied. Admin privileges required.", "error");
           setIsProcessing(false);
