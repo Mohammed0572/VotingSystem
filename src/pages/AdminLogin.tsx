@@ -35,15 +35,13 @@ const AdminLogin = () => {
     updateStatus("Authenticating...", "info");
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/verify-face', {
+      const response = await fetch('http://127.0.0.1:8000/admin-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // allow browser to store the HttpOnly cookie
         body: JSON.stringify({ 
-          voter_id: adminId, 
-          image_base64: adminPassword,
-          nonce: crypto.randomUUID(),
-          timestamp: Date.now()
+          username: adminId, 
+          password: adminPassword,
         })
       });
 
