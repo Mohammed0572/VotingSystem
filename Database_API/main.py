@@ -38,7 +38,7 @@ import numpy as np
 import dotenv
 import face_recognition
 import redis as redis_client
-from fastapi import FastAPI, HTTPException, Depends, Request, status
+from fastapi import FastAPI, HTTPException, Depends, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse
@@ -46,6 +46,7 @@ from pydantic import BaseModel, field_validator
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+import bcrypt
 
 # ── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -60,6 +61,16 @@ from config import settings
 
 SECRET_KEY: str = settings.resolved_secret_key
 JWT_EXPIRY_HOURS: int = settings.JWT_EXPIRY_HOURS
+
+def get_password_hash(password: str) -> str:
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode("utf-8"), salt).decode("ascii")
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    try:
+        return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("ascii"))
+    except ValueError:
+        return False
 MATCH_TOLERANCE: float = settings.MATCH_TOLERANCE
 EAR_MIN_CLOSED: float = settings.EAR_MIN_CLOSED
 EAR_MIN_OPEN: float = settings.EAR_MIN_OPEN
@@ -131,6 +142,14 @@ def init_db() -> None:
                 voter_id       TEXT PRIMARY KEY NOT NULL,
                 role           TEXT NOT NULL DEFAULT 'user',
                 face_encoding  TEXT NOT NULL
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS admins (
+                admin_id      TEXT PRIMARY KEY NOT NULL,
+                password_hash TEXT NOT NULL,
+                created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+                is_active     INTEGER NOT NULL DEFAULT 1
             )
         """)
         conn.commit()
@@ -216,15 +235,30 @@ def sync_encodings_pkl() -> None:
 def _seed_admin() -> None:
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT 1 FROM voters WHERE voter_id = 'admin'")
+        cursor.execute("SELECT 1 FROM admins")
         if cursor.fetchone() is None:
-            dummy = json.dumps(np.zeros(128).tolist())
+            # First boot scenario
+            admin_pass = settings.ADMIN_PASSWORD
+            
+            if not admin_pass:
+                raise ValueError("ADMIN_PASSWORD environment variable is missing. You MUST set a secure ADMIN_PASSWORD in the .env file before starting the server.")
+                
+            if len(admin_pass) < 12:
+                raise ValueError("ADMIN_PASSWORD must be at least 12 characters long.")
+                
+            if not any(char.isdigit() for char in admin_pass):
+                raise ValueError("ADMIN_PASSWORD must contain at least one digit.")
+                
+            if admin_pass.lower() in ["admin123", "password", "admin123456", "password123"]:
+                raise ValueError("ADMIN_PASSWORD is set to a known weak value. Choose a stronger password.")
+
+            hashed = get_password_hash(admin_pass)
             cursor.execute(
-                "INSERT INTO voters (voter_id, role, face_encoding) VALUES (?, ?, ?)",
-                ("admin", "admin", dummy),
+                "INSERT INTO admins (admin_id, password_hash) VALUES (?, ?)",
+                (settings.ADMIN_USERNAME, hashed),
             )
             conn.commit()
-            log.info("   [SEED] Created admin account")
+            log.info("   [SEED] Created initial admin account in admins table")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -337,14 +371,22 @@ def decode_jwt(token: str) -> dict:
 
 
 async def require_admin(
+    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> dict:
-    if credentials is None:
+    # Accept token from Authorization Bearer header OR HttpOnly cookie
+    token: Optional[str] = None
+    if credentials is not None:
+        token = credentials.credentials
+    else:
+        token = request.cookies.get("auth_token")
+
+    if token is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header missing. Provide a Bearer token.",
+            detail="Not authenticated. Provide a Bearer token or log in first.",
         )
-    payload = decode_jwt(credentials.credentials)
+    payload = decode_jwt(token)
     if payload.get("role") != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -435,10 +477,14 @@ class FaceVerifyRequest(BaseModel):
         return cleaned
 
 
+class AdminLoginRequest(BaseModel):
+    username: str
+    password: str
+
 class AuthResponse(BaseModel):
-    token: str
     role: str
     voter_id: str
+    # token is now delivered via HttpOnly cookie, NOT in the response body
     # distance REMOVED — was leaking face match proximity to client
 
 
@@ -528,6 +574,46 @@ async def auth_refresh(request: Request, response: Response):
 async def health(request: Request):  # Request param required by slowapi
     """Quick health check for monitoring."""
     return {"status": "ok", "service": "face-auth", "version": "3.1.0"}
+
+
+# Cookie configuration constants
+_COOKIE_NAME = "auth_token"
+_COOKIE_MAX_AGE = int(timedelta(hours=JWT_EXPIRY_HOURS).total_seconds())  # seconds
+
+
+@app.post("/admin-login")
+@limiter.limit("5/minute")
+async def admin_login(request: Request, body: AdminLoginRequest, response: Response):
+    """
+    Password-based login for administrators.
+    """
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT password_hash, is_active FROM admins WHERE admin_id = ?", (body.username,))
+        row = cursor.fetchone()
+
+        if row is None or not row["is_active"]:
+            log.warning("Failed admin login attempt for '%s'", body.username)
+            raise HTTPException(status_code=401, detail="Invalid credentials or account disabled")
+
+        if not verify_password(body.password, row["password_hash"]):
+            log.warning("Invalid password for admin '%s'", body.username)
+            raise HTTPException(status_code=401, detail="Invalid credentials or account disabled")
+
+    # Valid credentials -> issue token in cookie
+    token = create_jwt(body.username, "admin")
+
+    response.set_cookie(
+        key="auth_token",
+        value=token,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        max_age=JWT_EXPIRY_HOURS * 3600,
+    )
+
+    log.info("Admin '%s' logged in successfully via password", body.username)
+    return {"role": "admin", "voter_id": body.username}
 
 
 @app.post("/verify-face", response_model=AuthResponse)
@@ -646,19 +732,55 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
 
     token = create_jwt(voter_id, role)
 
-    response = Response()
+    response = JSONResponse(
+        content={"role": role, "voter_id": voter_id},
+        status_code=status.HTTP_200_OK,
+    )
     response.set_cookie(
-        key="auth_token",
+        key=_COOKIE_NAME,
         value=token,
         httponly=True,
-        secure=True,
+        secure=False,          # Set to True in production (requires HTTPS)
         samesite="strict",
-        max_age=JWT_EXPIRY_HOURS * 3600,
+        max_age=_COOKIE_MAX_AGE,
+        path="/",
     )
-    return JSONResponse(
-        content={"role": role, "voter_id": voter_id},
-        headers=dict(response.headers),
-    )
+    log.info("[AUTH] voter='%s' role='%s' — HttpOnly cookie issued.", voter_id, role)
+    return response
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SESSION ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+@app.get("/auth/me")
+@limiter.limit("30/minute")
+async def auth_me(request: Request):
+    """
+    Returns the current session's voter_id and role by reading the HttpOnly
+    auth cookie. Returns 401 if the cookie is absent or invalid.
+    """
+    token = request.cookies.get(_COOKIE_NAME)
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated.",
+        )
+    payload = decode_jwt(token)
+    return {"voter_id": payload.get("voter_id"), "role": payload.get("role")}
+
+
+@app.post("/auth/logout")
+@limiter.limit("10/minute")
+async def auth_logout(request: Request):
+    """
+    Clears the auth cookie, effectively logging the user out.
+    """
+    response = JSONResponse(content={"message": "Logged out successfully."})
+    response.delete_cookie(key=_COOKIE_NAME, path="/", samesite="strict")
+    log.info("[AUTH] Logout — cookie cleared for %s", request.client.host)
+    return response
 
 
 @app.post("/enroll-face", status_code=status.HTTP_201_CREATED)
