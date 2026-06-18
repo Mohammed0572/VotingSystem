@@ -1,8 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import VoterLogin from './VoterLogin';
 import { BrowserRouter } from 'react-router-dom';
-import { MemoryRouter } from 'react-router-dom';
 
 // Mock language context translations to simplify tests
 vi.mock('../context/LanguageContext', async (importOriginal) => {
@@ -14,6 +13,16 @@ vi.mock('../context/LanguageContext', async (importOriginal) => {
     }),
   };
 });
+
+// Mock AuthContext
+vi.mock('../context/AuthContext', () => ({
+  useAuth: () => ({
+    role: null,
+    voter_id: null,
+    setAuth: vi.fn(),
+    logout: vi.fn(),
+  })
+}));
 
 describe('VoterLogin Component', () => {
   const renderComponent = () => {

@@ -1,5 +1,5 @@
-
-pragma solidity ^0.5.15;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
 
 contract Voting {
     address public owner;
@@ -18,7 +18,7 @@ contract Voting {
     uint256 public votingEnd;
     uint256 public votingStart;
 
-    constructor() public {
+    constructor() {
         owner = msg.sender;
     }
 
@@ -35,11 +35,10 @@ contract Voting {
    
     function vote(uint candidateID) public {
 
-       require((votingStart <= now) && (votingEnd > now));
+       require((votingStart <= block.timestamp) && (votingEnd > block.timestamp));
    
        require(candidateID > 0 && candidateID <= countCandidates);
 
-       //daha önce oy kullanmamıs olmalı
        require(!voters[msg.sender]);
               
        voters[msg.sender] = true;
@@ -60,7 +59,7 @@ contract Voting {
     }
 
     function setDates(uint256 _startDate, uint256 _endDate) public onlyOwner {
-        require((votingEnd == 0) && (votingStart == 0) && (_startDate + 1000000 > now) && (_endDate > _startDate));
+        require((votingEnd == 0) && (votingStart == 0) && (_startDate + 1000000 > block.timestamp) && (_endDate > _startDate));
         votingEnd = _endDate;
         votingStart = _startDate;
     }

@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
 const Admin = () => {
   const { t } = useLanguage();
+  const { role } = useAuth();
   const { account, contract, isLoading } = useWeb3();
   const [candidateName, setCandidateName] = useState('');
   const [candidateParty, setCandidateParty] = useState('');
@@ -14,12 +16,10 @@ const Admin = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check for admin token
-    const token = localStorage.getItem('adminToken');
-    if (!token) {
-      navigate('/');
+    if (!role || role !== 'admin') {
+      navigate('/admin-login');
     }
-  }, [navigate]);
+  }, [role, navigate]);
 
   const updateStatus = (msg: string, type: string) => {
     setStatus({ message: msg, type });
