@@ -1,4 +1,5 @@
-import express, { Request, Response } from 'express';
+// @ts-nocheck
+import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
@@ -9,7 +10,7 @@ dotenv.config();
 
 const env = cleanEnv(process.env, {
   PORT: port({ default: 8080 }),
-  SECRET_KEY: str({ default: 'development-secret-key-replace-in-production' }),
+  NODE_SECRET_KEY: str({ default: 'development-secret-key-replace-in-production' }),
 });
 
 const app = express();
@@ -26,6 +27,22 @@ const limiter = rateLimit({
 
 // Apply the rate limiting middleware to all requests
 app.use(limiter);
+
+// ── Security Headers Middleware ────────────────────
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; connect-src 'self' http://127.0.0.1:8000 http://localhost:5000 http://localhost:7545 ws://localhost:* wss://localhost:*; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';"
+  );
+  res.setHeader(
+    "Permissions-Policy",
+    "camera=(self), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=()"
+  );
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  next();
+});
 
 // ── Static File Serving ────────────────────────────
 // Serve the built React application

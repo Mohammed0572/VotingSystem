@@ -1,10 +1,44 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict # pyright: ignore[reportMissingImports]
+"""
+config.py — Pydantic Settings for Face Auth API
+================================================
+Reads all configuration from environment variables / .env file.
+Add new settings here — never use os.getenv() directly in main.py.
+"""
+
+from pydantic_settings import BaseSettings, SettingsConfigDict  # pyright: ignore[reportMissingImports]
+
 
 class Settings(BaseSettings):
-    SECRET_KEY: str
-    JWT_EXPIRY_HOURS: int = 24
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+    # ── Auth ──────────────────────────────────────────────────
+    # Supports both SECRET_KEY (new) and FASTAPI_SECRET_KEY (legacy)
+    SECRET_KEY: str = ""
+    FASTAPI_SECRET_KEY: str = ""
+
+    @property
+    def resolved_secret_key(self) -> str:
+        """Return whichever key is set, preferring SECRET_KEY."""
+        return self.SECRET_KEY or self.FASTAPI_SECRET_KEY
+
+    JWT_EXPIRY_HOURS: int = 2
+
+    # ── Face Matching ─────────────────────────────────────────
     MATCH_TOLERANCE: float = 0.5
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    # ── Redis ─────────────────────────────────────────────────
+    REDIS_URL: str = "redis://127.0.0.1:6379/0"
+
+    # ── EAR Liveness Thresholds ───────────────────────────────
+    # Configurable so narrow-eye demographics aren't falsely rejected.
+    # Closed eye typically < 0.21, open eye typically > 0.25.
+    EAR_MIN_CLOSED: float = 0.22
+    EAR_MIN_OPEN: float = 0.25
+
 
 settings = Settings()
