@@ -4,11 +4,11 @@ import { useLanguage } from '../context/LanguageContext';
 
 const Layout = () => {
   const location = useLocation();
-  const { lang, setLang, t } = useLanguage();
+  const { setLang, t } = useLanguage();
   const [showLangMenu, setShowLangMenu] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[var(--cream)] flex flex-col">
+    <div className="min-h-screen bg-(--cream) flex flex-col">
 
       {/* Government top strip */}
       <div className="gov-top-strip">
@@ -74,8 +74,8 @@ const Layout = () => {
       </div>
       </div>
 
-      <main id="main" className="flex-grow flex flex-col items-center p-4 sm:p-6 lg:p-8 w-full">
-        <div className="w-full max-w-5xl flex-grow flex flex-col">
+      <main id="main" className="grow flex flex-col items-center p-4 sm:p-6 lg:p-8 w-full">
+        <div className="w-full max-w-5xl grow flex flex-col">
           <Outlet />
         </div>
       </main>

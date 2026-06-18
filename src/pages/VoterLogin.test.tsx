@@ -2,7 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import VoterLogin from './VoterLogin';
 import { BrowserRouter } from 'react-router-dom';
-import { LanguageProvider } from '../context/LanguageContext';
+import { MemoryRouter } from 'react-router-dom';
 
 // Mock language context translations to simplify tests
 vi.mock('../context/LanguageContext', async (importOriginal) => {
