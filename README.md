@@ -85,9 +85,9 @@ Administrators have access to a separate, secure dashboard where they can:
 ├── Database_API/                 # Python FastAPI authentication server (Face Auth)
 ├── face-recognition/             # Face registration & recognition CLI scripts
 ├── migrations/                   # Truffle deployment scripts
-├── server/                       # Alternative MongoDB backend (Experimental)
 ├── src/                          # Frontend source files (HTML/CSS/JS)
-├── index.js                      # Express server entry point (Frontend)
+├── docker-compose.yml            # Docker orchestration (Redis + Face Auth + Frontend)
+├── index.ts                      # Express server entry point (Frontend)
 ├── truffle-config.js             # Truffle network configuration
 └── README.md                     # Documentation
 ```
