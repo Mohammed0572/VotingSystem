@@ -1,28 +1,29 @@
 import { useState, useEffect } from 'react';
 import { useWeb3 } from '../context/Web3Context';
-import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
-import { useAuth } from '../context/AuthContext';
 
 const Admin = () => {
   const { t } = useLanguage();
-  const { role } = useAuth();
   const { account, contract, isLoading } = useWeb3();
   const [candidateName, setCandidateName] = useState('');
   const [candidateParty, setCandidateParty] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState({ message: '', type: '' });
-  const navigate = useNavigate();
-  const { session, isCheckingSession } = useAuth();
+  const [electionState, setElectionState] = useState<number | null>(null);
 
   useEffect(() => {
-    // Check for admin token via AuthContext
-    if (isCheckingSession) return;
-    if (!session || session.role !== 'admin') {
-      navigate('/');
+    if (contract) {
+      loadState();
     }
-  }, [navigate, session, isCheckingSession]);
+  }, [contract]);
+
+  const loadState = async () => {
+    try {
+      const stateResult = await contract.getElectionState();
+      setElectionState(stateResult.toNumber());
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const updateStatus = (msg: string, type: string) => {
     setStatus({ message: msg, type });
@@ -48,23 +49,27 @@ const Admin = () => {
     }
   };
 
-  const handleSetDates = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!startDate || !endDate) {
-      updateStatus('Please select both start and end dates.', 'error');
-      return;
-    }
-
+  const handleStartElection = async () => {
     try {
-      const startUnix = Math.floor(new Date(startDate).getTime() / 1000);
-      const endUnix = Math.floor(new Date(endDate).getTime() / 1000);
-      
       updateStatus('Processing transaction on blockchain...', 'info');
-      await contract.setDates(startUnix, endUnix, { from: account });
-      updateStatus('Voting dates set successfully!', 'success');
+      await contract.startElection({ from: account });
+      updateStatus('Election started successfully!', 'success');
+      loadState();
     } catch (error) {
       console.error(error);
-      updateStatus('Failed to set dates. Ensure you are the owner.', 'error');
+      updateStatus('Failed to start election. Ensure you are the owner and it is not already started.', 'error');
+    }
+  };
+
+  const handleEndElection = async () => {
+    try {
+      updateStatus('Processing transaction on blockchain...', 'info');
+      await contract.endElection({ from: account });
+      updateStatus('Election ended successfully!', 'success');
+      loadState();
+    } catch (error) {
+      console.error(error);
+      updateStatus('Failed to end election. Ensure you are the owner and it is currently active.', 'error');
     }
   };
 
@@ -133,45 +138,39 @@ const Admin = () => {
           </form>
         </div>
 
-        {/* Set Dates Form */}
+        {/* Election Controls Form */}
         <div className="bg-cream p-6 rounded-sm border border-[#dfe1e2]">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-[#005ea2] text-white rounded-full">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
             </div>
-            <h2 className="text-xl font-bold font-heading text-[#112e51]">{t('admin.schedule')}</h2>
+            <h2 className="text-xl font-bold font-heading text-[#112e51]">{t('admin.schedule') || 'Election Controls'}</h2>
           </div>
 
-          <form onSubmit={handleSetDates} className="space-y-4">
-            <div>
-              <label className="gov-input-label" htmlFor="startDate">{t('admin.start_date')}</label>
-              <input
-                id="startDate"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="gov-input"
-              />
-            </div>
-            <div>
-              <label className="gov-input-label" htmlFor="endDate">{t('admin.end_date')}</label>
-              <input
-                id="endDate"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="gov-input"
-              />
-            </div>
-            <div className="pt-2">
+          <div className="mb-4">
+            <p className="font-bold mb-2">Current State: {electionState === 1 ? 'Active' : electionState === 2 ? 'Ended' : 'Not Started'}</p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="pt-2 flex gap-4">
               <button
-                type="submit"
-                className="gov-button"
+                type="button"
+                className="btn-primary"
+                onClick={handleStartElection}
+                disabled={electionState !== 0}
               >
-                {t('admin.update_btn')}
+                Start Election
+              </button>
+              <button
+                type="button"
+                className="btn-primary bg-danger hover:bg-danger-dark border-transparent text-white"
+                onClick={handleEndElection}
+                disabled={electionState !== 1}
+              >
+                End Election
               </button>
             </div>
-          </form>
+          </div>
         </div>
       </div>
     </div>
