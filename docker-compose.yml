@@ -1,0 +1,74 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────
+# VotingSystem — Docker Compose
+# Adds Redis for rate-limiting the Face Auth API.
+#
+# Usage:
+#   docker compose up -d redis        # just Redis, dev mode
+#   docker compose up -d              # full stack
+#   docker compose down -v            # teardown + wipe volumes
+# ─────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Redis ──────────────────────────────────────────────────
+  redis:
+    image: redis:7.2-alpine
+    container_name: voting_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"                   # expose to host for dev/debug
+    volumes:
+      - redis_data:/data
+    command: >
+      redis-server
+        --save 60 1
+        --loglevel warning
+        --requirepass "${REDIS_PASSWORD:-}"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ── Face Auth API (FastAPI) ────────────────────────────────
+  face_auth:
+    build:
+      context: ./Database_API
+      dockerfile: Dockerfile
+    container_name: voting_face_auth
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_EXPIRY_HOURS=${JWT_EXPIRY_HOURS:-2}
+      - MATCH_TOLERANCE=${MATCH_TOLERANCE:-0.5}
+      - REDIS_URL=redis://redis:6379/0   # service name, not localhost
+      - EAR_MIN_CLOSED=${EAR_MIN_CLOSED:-0.22}
+      - EAR_MIN_OPEN=${EAR_MIN_OPEN:-0.25}
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./face-recognition:/app/face-recognition:ro   # encodings.pkl
+
+  # ── Express Frontend ───────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: voting_frontend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - SECRET_KEY=${SECRET_KEY}
+    depends_on:
+      - face_auth
+
+volumes:
+  redis_data:
+    driver: local
