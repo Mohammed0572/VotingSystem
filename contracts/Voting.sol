@@ -14,12 +14,18 @@ contract Voting {
     mapping (uint => Candidate) public candidates;
     mapping (address => bool) public voters;
 
+    enum ElectionState {
+        NotStarted,
+        Active,
+        Ended
+    }
+
+    ElectionState public state;
     uint public countCandidates;
-    uint256 public votingEnd;
-    uint256 public votingStart;
 
     constructor() {
         owner = msg.sender;
+        state = ElectionState.NotStarted;
     }
 
     modifier onlyOwner() {
@@ -35,9 +41,9 @@ contract Voting {
    
     function vote(uint candidateID) public {
 
-       require((votingStart <= block.timestamp) && (votingEnd > block.timestamp));
+       require(state == ElectionState.Active, "Election is not active.");
    
-       require(candidateID > 0 && candidateID <= countCandidates);
+       require(candidateID > 0 && candidateID <= countCandidates, "Invalid candidate.");
 
        require(!voters[msg.sender]);
               
@@ -58,13 +64,17 @@ contract Voting {
         return (candidateID,candidates[candidateID].name,candidates[candidateID].party,candidates[candidateID].voteCount);
     }
 
-    function setDates(uint256 _startDate, uint256 _endDate) public onlyOwner {
-        require((votingEnd == 0) && (votingStart == 0) && (_startDate + 1000000 > block.timestamp) && (_endDate > _startDate));
-        votingEnd = _endDate;
-        votingStart = _startDate;
+    function startElection() public onlyOwner {
+        require(state == ElectionState.NotStarted, "Election has already started.");
+        state = ElectionState.Active;
     }
 
-    function getDates() public view returns (uint256,uint256) {
-      return (votingStart,votingEnd);
+    function endElection() public onlyOwner {
+        require(state == ElectionState.Active, "Election is not active.");
+        state = ElectionState.Ended;
+    }
+
+    function getElectionState() public view returns (ElectionState) {
+        return state;
     }
 }
