@@ -15,6 +15,7 @@ const Voting = () => {
   const { t } = useLanguage();
   const { role } = useAuth();
   const { account, contract, isLoading } = useWeb3();
+  const { session, isCheckingSession } = useAuth();
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [dates, setDates] = useState({ start: '', end: '' });
   const [hasVoted, setHasVoted] = useState<boolean>(false);
@@ -24,7 +25,9 @@ const Voting = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!role || role !== 'user') {
+    // Wait for the session cookie check to finish before redirecting
+    if (isCheckingSession) return;
+    if (!session) {
       navigate('/');
       return;
     }
@@ -32,7 +35,7 @@ const Voting = () => {
     if (contract) {
       loadVotingData();
     }
-  }, [contract, navigate]);
+  }, [contract, navigate, session, isCheckingSession]);
 
   const loadVotingData = async () => {
     try {
