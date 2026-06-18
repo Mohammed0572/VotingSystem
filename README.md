@@ -69,9 +69,9 @@ Administrators have access to a separate, secure dashboard where they can:
 ├── Database_API/                 # Python FastAPI authentication server (Face Auth)
 ├── face-recognition/             # Face registration & recognition CLI scripts
 ├── migrations/                   # Truffle deployment scripts
-├── server/                       # Alternative MongoDB backend (Experimental)
 ├── src/                          # Frontend source files (HTML/CSS/JS)
-├── index.js                      # Express server entry point (Frontend)
+├── docker-compose.yml            # Docker orchestration (Redis + Face Auth + Frontend)
+├── index.ts                      # Express server entry point (Frontend)
 ├── truffle-config.js             # Truffle network configuration
 └── README.md                     # Documentation
 ```
@@ -121,7 +121,7 @@ Generate two unique secure secret keys by running this command twice:
 ```bash
 node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ```
-Place one key as `NODE_SECRET_KEY` in the root `.env` file, and the other as `FASTAPI_SECRET_KEY` in `Database_API/.env`.
+Place one key as `NODE_SECRET_KEY` in the root `.env` file, and the other as `SECRET_KEY` in `Database_API/.env`.
 
 ### 4. Start the Blockchain (Ganache)
 1. Open **Ganache** and create a new workspace (e.g., named "development").
