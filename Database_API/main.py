@@ -36,7 +36,7 @@ import numpy as np
 import dotenv
 import face_recognition
 import redis as redis_client                        # NEW
-from fastapi import FastAPI, HTTPException, Depends, Request, status
+from fastapi import FastAPI, HTTPException, Depends, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse
@@ -302,14 +302,22 @@ def decode_jwt(token: str) -> dict:
 
 
 async def require_admin(
+    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> dict:
-    if credentials is None:
+    # Accept token from Authorization Bearer header OR HttpOnly cookie
+    token: Optional[str] = None
+    if credentials is not None:
+        token = credentials.credentials
+    else:
+        token = request.cookies.get("auth_token")
+
+    if token is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header missing. Provide a Bearer token.",
+            detail="Not authenticated. Provide a Bearer token or log in first.",
         )
-    payload = decode_jwt(credentials.credentials)
+    payload = decode_jwt(token)
     if payload.get("role") != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -401,9 +409,9 @@ class FaceVerifyRequest(BaseModel):
 
 
 class AuthResponse(BaseModel):
-    token: str
     role: str
     voter_id: str
+    # token is now delivered via HttpOnly cookie, NOT in the response body
     # distance REMOVED — was leaking face match proximity to client
 
 
@@ -432,6 +440,11 @@ class EnrollRequest(BaseModel):
 async def health(request: Request):  # Request param required by slowapi
     """Quick health check for monitoring."""
     return {"status": "ok", "service": "face-auth", "version": "3.1.0"}
+
+
+# Cookie configuration constants
+_COOKIE_NAME = "auth_token"
+_COOKIE_MAX_AGE = int(timedelta(hours=JWT_EXPIRY_HOURS).total_seconds())  # seconds
 
 
 @app.post("/verify-face", response_model=AuthResponse)
@@ -550,8 +563,55 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
 
     token = create_jwt(voter_id, role)
 
-    return AuthResponse(token=token, role=role, voter_id=voter_id)
-    # distance field removed from response
+    response = JSONResponse(
+        content={"role": role, "voter_id": voter_id},
+        status_code=status.HTTP_200_OK,
+    )
+    response.set_cookie(
+        key=_COOKIE_NAME,
+        value=token,
+        httponly=True,
+        secure=False,          # Set to True in production (requires HTTPS)
+        samesite="strict",
+        max_age=_COOKIE_MAX_AGE,
+        path="/",
+    )
+    log.info("[AUTH] voter='%s' role='%s' — HttpOnly cookie issued.", voter_id, role)
+    return response
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SESSION ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+@app.get("/auth/me")
+@limiter.limit("30/minute")
+async def auth_me(request: Request):
+    """
+    Returns the current session's voter_id and role by reading the HttpOnly
+    auth cookie. Returns 401 if the cookie is absent or invalid.
+    """
+    token = request.cookies.get(_COOKIE_NAME)
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated.",
+        )
+    payload = decode_jwt(token)
+    return {"voter_id": payload.get("voter_id"), "role": payload.get("role")}
+
+
+@app.post("/auth/logout")
+@limiter.limit("10/minute")
+async def auth_logout(request: Request):
+    """
+    Clears the auth cookie, effectively logging the user out.
+    """
+    response = JSONResponse(content={"message": "Logged out successfully."})
+    response.delete_cookie(key=_COOKIE_NAME, path="/", samesite="strict")
+    log.info("[AUTH] Logout — cookie cleared for %s", request.client.host)
+    return response
 
 
 @app.post("/enroll-face", status_code=status.HTTP_201_CREATED)
