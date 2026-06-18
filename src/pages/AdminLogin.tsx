@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
 const AdminLogin = () => {
   const { t } = useLanguage();
+  const { setAuth } = useAuth();
   const [adminId, setAdminId] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [status, setStatus] = useState({ message: '', type: '' });
@@ -47,9 +49,9 @@ const AdminLogin = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.role === 'admin') {
-          updateStatus("Authentication successful. Redirecting...", "success");
-          localStorage.setItem('adminToken', data.token || data.access_token);
-          setTimeout(() => navigate('/admin'), 1000);
+          updateStatus("Login Successful! Redirecting...", "success");
+          setAuth(data.role, data.voter_id);
+          setTimeout(() => navigate('/admin'), 1500);
         } else {
           updateStatus("Access denied. Admin privileges required.", "error");
           setIsProcessing(false);

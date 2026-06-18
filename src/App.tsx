@@ -10,28 +10,32 @@ import Accessibility from './pages/Accessibility';
 import Contact from './pages/Contact';
 import { Web3Provider } from './context/Web3Context';
 import { LanguageProvider } from './context/LanguageContext';
+import { AuthProvider } from './context/AuthContext';
 
 function App() {
   return (
     <LanguageProvider>
-      <Web3Provider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Layout />}>
-              <Route index element={<VoterLogin />} />
-              <Route path="admin-login" element={<AdminLogin />} />
-              <Route path="admin" element={<Admin />} />
-              <Route path="voting" element={<Voting />} />
-              <Route path="terms" element={<Terms />} />
-              <Route path="privacy" element={<Privacy />} />
-              <Route path="accessibility" element={<Accessibility />} />
-              <Route path="contact" element={<Contact />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </Web3Provider>
+      <AuthProvider>
+        <Web3Provider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Layout />}>
+                <Route index element={<VoterLogin />} />
+                <Route path="admin-login" element={<AdminLogin />} />
+                <Route path="admin" element={<Admin />} />
+                <Route path="voting" element={<Voting />} />
+                <Route path="terms" element={<Terms />} />
+                <Route path="privacy" element={<Privacy />} />
+                <Route path="accessibility" element={<Accessibility />} />
+                <Route path="contact" element={<Contact />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </Web3Provider>
+      </AuthProvider>
     </LanguageProvider>
   );
 }
 
 export default App;
+

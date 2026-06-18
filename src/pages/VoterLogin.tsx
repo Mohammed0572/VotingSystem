@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
 const VoterLogin = () => {
   const { t } = useLanguage();
+  const { setAuth } = useAuth();
   const [voterId, setVoterId] = useState('');
   
   // Camera state
@@ -100,16 +102,16 @@ const VoterLogin = () => {
       });
 
       if (response.ok) {
-        const data = await response.json();
-        updateStatus("Authentication Successful! Redirecting...", "success");
-        const token = data.access_token || data.token || data;
-        localStorage.setItem('auth_token', token);
+        const data = await response.json();        
+        updateStatus("Verification successful! Redirecting...", "success");
+        setAuth(data.role, data.voter_id);
         
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop());
-        }
-        
-        setTimeout(() => navigate('/voting'), 1500);
+        setTimeout(() => {
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+          }
+          navigate('/voting');
+        }, 1500);
       } else if (response.status === 401) {
         updateStatus("Face mismatch or Voter ID not found.", "error");
         setIsProcessing(false);
