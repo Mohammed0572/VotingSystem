@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
 interface Candidate {
   id: number;
@@ -12,6 +13,7 @@ interface Candidate {
 
 const Voting = () => {
   const { t } = useLanguage();
+  const { role } = useAuth();
   const { account, contract, isLoading } = useWeb3();
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [dates, setDates] = useState({ start: '', end: '' });
@@ -22,8 +24,7 @@ const Voting = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
+    if (!role || role !== 'user') {
       navigate('/');
       return;
     }
@@ -197,8 +198,6 @@ const Voting = () => {
             )}
             
             {message.text && !hasVoted && (
-              <div className={`p-4 border-l-4 rounded-sm mb-6 ${message.type === 'error' ? 'bg-danger-light border-danger text-danger' : 'bg-india-blue-lt border-india-blue text-india-blue'}`}>
-                {isVoting && <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-india-blue"></div>}
               <div className={`mt-6 p-4 rounded-md font-bold text-center flex items-center justify-center gap-3 ${message.type === 'error' ? 'bg-[#FFF5F5] text-danger border border-danger' : 'bg-india-blue-lt text-india-blue border border-india-blue'}`}>
                 {isVoting && <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-india-blue"></div>}
                 {message.text}
