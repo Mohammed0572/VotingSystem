@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useWeb3 } from '../context/Web3Context';
-import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
-import { useAuth } from '../context/AuthContext';
 
 interface Candidate {
   id: number;
@@ -13,37 +11,24 @@ interface Candidate {
 
 const Voting = () => {
   const { t } = useLanguage();
-  const { role } = useAuth();
   const { account, contract, isLoading } = useWeb3();
-  const { session, isCheckingSession } = useAuth();
   const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [dates, setDates] = useState({ start: '', end: '' });
+  const [electionState, setElectionState] = useState<number | null>(null);
   const [hasVoted, setHasVoted] = useState<boolean>(false);
   const [selectedCandidate, setSelectedCandidate] = useState<number | null>(null);
   const [isVoting, setIsVoting] = useState<boolean>(false);
   const [message, setMessage] = useState({ text: '', type: '' });
-  const navigate = useNavigate();
 
   useEffect(() => {
-    // Wait for the session cookie check to finish before redirecting
-    if (isCheckingSession) return;
-    if (!session) {
-      navigate('/');
-      return;
-    }
-
     if (contract) {
       loadVotingData();
     }
-  }, [contract, navigate, session, isCheckingSession]);
+  }, [contract]);
 
   const loadVotingData = async () => {
     try {
-      const datesResult = await contract.getDates();
-      setDates({
-        start: new Date(datesResult[0].toNumber() * 1000).toDateString(),
-        end: new Date(datesResult[1].toNumber() * 1000).toDateString()
-      });
+      const stateResult = await contract.getElectionState();
+      setElectionState(stateResult.toNumber());
 
       const count = await contract.getCountCandidates();
       const candidatesArray = [];
@@ -164,7 +149,9 @@ const Voting = () => {
           <div className="vote-card-head">
             <div>
               <h3>{t('voting.cand_name')}</h3>
-              <p>Active Period: {dates.start || 'TBA'} - {dates.end || 'TBA'}</p>
+              <p>
+                Status: {electionState === 1 ? 'Active' : electionState === 2 ? 'Ended' : 'Not Started'}
+              </p>
             </div>
             <div className="step-pill">STEP 1 OF 3</div>
           </div>
@@ -173,9 +160,16 @@ const Voting = () => {
           <div className="vote-body flex-1">
             <h4>Registered Candidates</h4>
             
-            {displayCandidates.length === 0 ? (
+            {electionState === 0 && (
+              <p className="text-text-secondary py-8 text-center font-bold">The election has not started yet.</p>
+            )}
+            {electionState === 2 && (
+              <p className="py-8 text-center font-bold text-danger">The election has ended.</p>
+            )}
+            
+            {electionState === 1 && displayCandidates.length === 0 ? (
               <p className="text-text-secondary py-8 text-center">No candidates are currently registered.</p>
-            ) : (
+            ) : electionState === 1 ? (
               displayCandidates.map((candidate, index) => (
                 <div 
                   key={candidate.id} 
@@ -192,7 +186,7 @@ const Voting = () => {
                   <div className="cand-no">{candidate.id === 9999 ? '—' : (index + 1).toString().padStart(2, '0')}</div>
                 </div>
               ))
-            )}
+            ) : null}
 
             {hasVoted && (
               <div className="p-4 mb-6 rounded-sm bg-india-green-light border-l-4 border-india-green text-india-green font-bold text-center">
@@ -214,14 +208,14 @@ const Voting = () => {
               <button 
                 className="btn-secondary" 
                 onClick={() => setSelectedCandidate(null)}
-                disabled={hasVoted || isVoting}
+                disabled={hasVoted || isVoting || electionState !== 1}
               >
                 Reset
               </button>
               <button 
                 className="btn-primary"
                 onClick={handleVote}
-                disabled={hasVoted || isVoting || !selectedCandidate}
+                disabled={hasVoted || isVoting || !selectedCandidate || electionState !== 1}
               >
                 {isVoting ? t('voter.processing') : t('voting.confirm')}
               </button>
