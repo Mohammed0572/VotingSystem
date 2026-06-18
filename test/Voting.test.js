@@ -79,4 +79,30 @@ contract("Voting", (accounts) => {
       assert(error.message.indexOf("revert") >= 0, "Error must contain revert");
     }
   });
+
+  it("should prevent non-owner from setting voting dates", async () => {
+    const newVotingInstance = await Voting.new({ from: accounts[0] });
+    const now = Math.floor(Date.now() / 1000);
+    const startDate = now + 10;
+    const endDate = now + 86400;
+
+    try {
+      await newVotingInstance.setDates(startDate, endDate, { from: accounts[1] });
+      assert.fail("The transaction should have reverted");
+    } catch (error) {
+      assert(error.message.indexOf("revert") >= 0, "Error must contain revert");
+      assert(error.message.indexOf("Not authorized") >= 0, "Error message should include 'Not authorized'");
+    }
+  });
+
+  it("should prevent non-owner from adding a candidate", async () => {
+    const newVotingInstance = await Voting.new({ from: accounts[0] });
+    try {
+      await newVotingInstance.addCandidate("Eve", "Party E", { from: accounts[1] });
+      assert.fail("The transaction should have reverted");
+    } catch (error) {
+      assert(error.message.indexOf("revert") >= 0, "Error must contain revert");
+      assert(error.message.indexOf("Not authorized") >= 0, "Error message should include 'Not authorized'");
+    }
+  });
 });
