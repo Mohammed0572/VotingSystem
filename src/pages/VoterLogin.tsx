@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
 const VoterLogin = () => {
   const { t } = useLanguage();
+  const { setAuth } = useAuth();
   const [voterId, setVoterId] = useState('');
   
   // Camera state
@@ -91,6 +93,7 @@ const VoterLogin = () => {
       const response = await fetch('http://127.0.0.1:8000/verify-face', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // allow browser to store the HttpOnly cookie
         body: JSON.stringify({ 
           voter_id: voterId, 
           images_base64: frames,
@@ -102,8 +105,9 @@ const VoterLogin = () => {
       if (response.ok) {
         const data = await response.json();
         updateStatus("Authentication Successful! Redirecting...", "success");
-        const token = data.access_token || data.token || data;
-        localStorage.setItem('auth_token', token);
+        // Token is now stored in an HttpOnly cookie by the backend.
+        // We just update React state with the non-sensitive session info.
+        setAuth({ voter_id: data.voter_id, role: data.role });
         
         if (streamRef.current) {
           streamRef.current.getTracks().forEach(track => track.stop());
