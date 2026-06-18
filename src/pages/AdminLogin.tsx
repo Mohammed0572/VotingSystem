@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
 const AdminLogin = () => {
   const { t } = useLanguage();
+  const { setAuth } = useAuth();
   const [adminId, setAdminId] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [status, setStatus] = useState({ message: '', type: '' });
@@ -36,6 +38,7 @@ const AdminLogin = () => {
       const response = await fetch('http://127.0.0.1:8000/verify-face', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // allow browser to store the HttpOnly cookie
         body: JSON.stringify({ 
           voter_id: adminId, 
           image_base64: adminPassword,
@@ -48,7 +51,9 @@ const AdminLogin = () => {
         const data = await response.json();
         if (data.role === 'admin') {
           updateStatus("Authentication successful. Redirecting...", "success");
-          localStorage.setItem('adminToken', data.token || data.access_token);
+          // Token is now stored in an HttpOnly cookie by the backend.
+          // We just update React state with the non-sensitive session info.
+          setAuth({ voter_id: data.voter_id, role: data.role });
           setTimeout(() => navigate('/admin'), 1000);
         } else {
           updateStatus("Access denied. Admin privileges required.", "error");
