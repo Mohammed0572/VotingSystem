@@ -6,6 +6,7 @@ Add new settings here — never use os.getenv() directly in main.py.
 """
 
 from pydantic_settings import BaseSettings, SettingsConfigDict  # pyright: ignore[reportMissingImports]
+from pydantic import field_validator
 
 
 class Settings(BaseSettings):
@@ -20,6 +21,16 @@ class Settings(BaseSettings):
     # Supports both SECRET_KEY (new) and FASTAPI_SECRET_KEY (legacy)
     SECRET_KEY: str = ""
     FASTAPI_SECRET_KEY: str = ""
+    # ── Admin Auth ────────────────────────────────────────────
+    ADMIN_USERNAME: str = "admin_user"
+    ADMIN_PASSWORD: str = ""
+
+    @field_validator("ADMIN_USERNAME")
+    @classmethod
+    def username_must_not_be_predictable(cls, v: str) -> str:
+        if v.lower() in ["admin", "root"]:
+            raise ValueError("Predictable usernames like 'admin' or 'root' are strictly prohibited.")
+        return v
 
     @property
     def resolved_secret_key(self) -> str:

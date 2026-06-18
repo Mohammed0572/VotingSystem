@@ -93,6 +93,7 @@ const VoterLogin = () => {
       const response = await fetch('http://127.0.0.1:8000/verify-face', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // allow browser to store the HttpOnly cookie
         body: JSON.stringify({ 
           voter_id: voterId, 
           images_base64: frames,
@@ -102,9 +103,11 @@ const VoterLogin = () => {
       });
 
       if (response.ok) {
-        const data = await response.json();        
-        updateStatus("Verification successful! Redirecting...", "success");
-        setAuth(data.role, data.voter_id);
+        const data = await response.json();
+        updateStatus("Authentication Successful! Redirecting...", "success");
+        // Token is now stored in an HttpOnly cookie by the backend.
+        // We just update React state with the non-sensitive session info.
+        setAuth({ voter_id: data.voter_id, role: data.role });
         
         setTimeout(() => {
           if (streamRef.current) {
