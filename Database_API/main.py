@@ -40,6 +40,7 @@ import face_recognition
 import redis as redis_client
 from fastapi import FastAPI, HTTPException, Depends, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, field_validator
@@ -417,6 +418,18 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# ── HTTPS Enforcement and Security Headers ───────────────────────────────────
+app.add_middleware(HTTPSRedirectMiddleware)
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Content-Security-Policy"] = "default-src 'self'"
+    return response
+
 # ── Attach limiter to app state ──────────────────────────────────────────────
 app.state.limiter = limiter
 
@@ -740,7 +753,7 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
         key=_COOKIE_NAME,
         value=token,
         httponly=True,
-        secure=False,          # Set to True in production (requires HTTPS)
+        secure=True,
         samesite="strict",
         max_age=_COOKIE_MAX_AGE,
         path="/",

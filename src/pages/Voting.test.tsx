@@ -2,27 +2,18 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Voting from './Voting';
 import { BrowserRouter } from 'react-router-dom';
-import { useWeb3 } from '../context/Web3Context';
-const { mockContract } = vi.hoisted(() => ({
-  mockContract: {
-    getDates: vi.fn(),
-    getCountCandidates: vi.fn(),
-    getCandidate: vi.fn(),
-    checkVote: vi.fn(),
-    vote: vi.fn(),
-  }
-}));
 
 const mockWeb3State = vi.hoisted(() => ({
   account: '0x123',
   contract: {
-    getDates: vi.fn(),
+    getElectionState: vi.fn().mockResolvedValue({ toNumber: () => 1 }), // Active
     getCountCandidates: vi.fn(),
     getCandidate: vi.fn(),
     checkVote: vi.fn(),
     vote: vi.fn(),
   },
   isLoading: false,
+  web3: null,
 }));
 
 vi.mock('../context/Web3Context', () => ({
@@ -36,19 +27,18 @@ vi.mock('../context/LanguageContext', () => ({
   }),
 }));
 
-// Mock Auth Context
-const mockAuth = {
-  session: { role: 'user', voter_id: 'test' },
-  isCheckingSession: false,
-};
-
-vi.mock('../context/AuthContext', () => ({
-  useAuth: () => mockAuth,
-}));
-
 describe('Voting Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset to Active state before each test
+    mockWeb3State.isLoading = false;
+    mockWeb3State.contract = {
+      getElectionState: vi.fn().mockResolvedValue({ toNumber: () => 1 }),
+      getCountCandidates: vi.fn(),
+      getCandidate: vi.fn(),
+      checkVote: vi.fn(),
+      vote: vi.fn(),
+    };
   });
 
   const renderComponent = () => {
@@ -67,9 +57,8 @@ describe('Voting Component', () => {
   });
 
   it('loads candidates from contract', async () => {
-    mockWeb3State.isLoading = false;
     mockWeb3State.contract = {
-      getDates: vi.fn().mockResolvedValue([{ toNumber: () => Math.floor(Date.now() / 1000) }, { toNumber: () => Math.floor(Date.now() / 1000) + 86400 }]),
+      getElectionState: vi.fn().mockResolvedValue({ toNumber: () => 1 }),
       getCountCandidates: vi.fn().mockResolvedValue({ toNumber: () => 1 }),
       getCandidate: vi.fn().mockResolvedValue([{ toNumber: () => 1 }, 'Alice', 'Party A', { toNumber: () => 0 }]),
       checkVote: vi.fn().mockResolvedValue(false),
@@ -85,9 +74,8 @@ describe('Voting Component', () => {
   });
 
   it('shows success message if user has already voted', async () => {
-    mockWeb3State.isLoading = false;
     mockWeb3State.contract = {
-      getDates: vi.fn().mockResolvedValue([{ toNumber: () => Math.floor(Date.now() / 1000) }, { toNumber: () => Math.floor(Date.now() / 1000) + 86400 }]),
+      getElectionState: vi.fn().mockResolvedValue({ toNumber: () => 1 }),
       getCountCandidates: vi.fn().mockResolvedValue({ toNumber: () => 0 }),
       getCandidate: vi.fn(),
       checkVote: vi.fn().mockResolvedValue(true),
@@ -102,10 +90,9 @@ describe('Voting Component', () => {
   });
 
   it('allows voting workflow', async () => {
-    mockWeb3State.isLoading = false;
     const mockVote = vi.fn().mockResolvedValue(true);
     mockWeb3State.contract = {
-      getDates: vi.fn().mockResolvedValue([{ toNumber: () => Math.floor(Date.now() / 1000) }, { toNumber: () => Math.floor(Date.now() / 1000) + 86400 }]),
+      getElectionState: vi.fn().mockResolvedValue({ toNumber: () => 1 }),
       getCountCandidates: vi.fn().mockResolvedValue({ toNumber: () => 1 }),
       getCandidate: vi.fn().mockResolvedValue([{ toNumber: () => 1 }, 'Alice', 'Party A', { toNumber: () => 0 }]),
       checkVote: vi.fn().mockResolvedValue(false),
