@@ -19,6 +19,16 @@ vi.mock('../context/AuthContext', () => ({
   useAuth: () => mockAuth,
 }));
 
+// Mock AuthContext
+vi.mock('../context/AuthContext', () => ({
+  useAuth: () => ({
+    role: null,
+    voter_id: null,
+    setAuth: vi.fn(),
+    logout: vi.fn(),
+  })
+}));
+
 describe('VoterLogin Component', () => {
   const renderComponent = () => {
     return render(

@@ -11,6 +11,7 @@ import Contact from './pages/Contact';
 import { Web3Provider } from './context/Web3Context';
 import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
@@ -22,8 +23,12 @@ function App() {
             <Route path="/" element={<Layout />}>
               <Route index element={<VoterLogin />} />
               <Route path="admin-login" element={<AdminLogin />} />
-              <Route path="admin" element={<Admin />} />
-              <Route path="voting" element={<Voting />} />
+              <Route element={<ProtectedRoute allowedRole="admin" />}>
+                <Route path="admin" element={<Admin />} />
+              </Route>
+              <Route element={<ProtectedRoute allowedRole="user" />}>
+                <Route path="voting" element={<Voting />} />
+              </Route>
               <Route path="terms" element={<Terms />} />
               <Route path="privacy" element={<Privacy />} />
               <Route path="accessibility" element={<Accessibility />} />
@@ -38,3 +43,4 @@ function App() {
 }
 
 export default App;
+
