@@ -1,5 +1,5 @@
-
-pragma solidity ^0.5.15;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
 
 contract Voting {
     address public owner;
@@ -14,12 +14,18 @@ contract Voting {
     mapping (uint => Candidate) public candidates;
     mapping (address => bool) public voters;
 
-    uint public countCandidates;
-    uint256 public votingEnd;
-    uint256 public votingStart;
+    enum ElectionState {
+        NotStarted,
+        Active,
+        Ended
+    }
 
-    constructor() public {
+    ElectionState public state;
+    uint public countCandidates;
+
+    constructor() {
         owner = msg.sender;
+        state = ElectionState.NotStarted;
     }
 
     modifier onlyOwner() {
@@ -35,11 +41,10 @@ contract Voting {
    
     function vote(uint candidateID) public {
 
-       require((votingStart <= now) && (votingEnd > now));
+       require(state == ElectionState.Active, "Election is not active.");
    
-       require(candidateID > 0 && candidateID <= countCandidates);
+       require(candidateID > 0 && candidateID <= countCandidates, "Invalid candidate.");
 
-       //daha önce oy kullanmamıs olmalı
        require(!voters[msg.sender]);
               
        voters[msg.sender] = true;
@@ -59,13 +64,17 @@ contract Voting {
         return (candidateID,candidates[candidateID].name,candidates[candidateID].party,candidates[candidateID].voteCount);
     }
 
-    function setDates(uint256 _startDate, uint256 _endDate) public onlyOwner {
-        require((votingEnd == 0) && (votingStart == 0) && (_startDate + 1000000 > now) && (_endDate > _startDate));
-        votingEnd = _endDate;
-        votingStart = _startDate;
+    function startElection() public onlyOwner {
+        require(state == ElectionState.NotStarted, "Election has already started.");
+        state = ElectionState.Active;
     }
 
-    function getDates() public view returns (uint256,uint256) {
-      return (votingStart,votingEnd);
+    function endElection() public onlyOwner {
+        require(state == ElectionState.Active, "Election is not active.");
+        state = ElectionState.Ended;
+    }
+
+    function getElectionState() public view returns (ElectionState) {
+        return state;
     }
 }

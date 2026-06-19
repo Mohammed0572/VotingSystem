@@ -1,10 +1,11 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 
 const Layout = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { setLang, t } = useLanguage();
   const { session, logout } = useAuth();
   const [showLangMenu, setShowLangMenu] = useState(false);
@@ -47,7 +48,7 @@ const Layout = () => {
           <button 
             onClick={async () => {
               await logout();
-              window.location.href = '/';
+              navigate('/');
             }} 
             className="lang-btn"
             style={{ marginRight: '16px', borderColor: 'var(--danger)', color: '#FFE0E0' }}

@@ -4,12 +4,13 @@ Rate Limiting Integration — VotingSystem Face Auth API
 Drop-in patch using slowapi + Redis backend.
 
 Changes from original main.py:
-  1. Added Redis connection with fallback to in-memory
-  2. Added Limiter with per-route limits
-  3. Added custom error handler for 429 responses
-  4. Added /verify-face → 5/minute per IP
-  5. Added /enroll-face → 10/minute per IP (admin-only, less strict)
-  6. Added /health    → 60/minute (monitoring tools)
+1. Added Redis connection with fallback to in-memory
+2. Added Limiter with per-route limits
+3. Added custom error handler for 429 responses
+4. Added /verify-face → 5/minute per IP
+5. Added /enroll-face → 10/minute per IP (admin-only, less strict)
+6. Added /health    → 60/minute (monitoring tools)
+7. Added auth endpoints for session management
 
 Install:
     pip install slowapi redis
@@ -22,6 +23,7 @@ Run:
 import os
 import json
 import base64
+import hashlib
 import pickle
 import sqlite3
 import logging
@@ -38,6 +40,7 @@ import face_recognition
 import redis as redis_client
 from fastapi import FastAPI, HTTPException, Depends, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, field_validator
@@ -70,6 +73,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     except ValueError:
         return False
 MATCH_TOLERANCE: float = settings.MATCH_TOLERANCE
+EAR_MIN_CLOSED: float = settings.EAR_MIN_CLOSED
+EAR_MIN_OPEN: float = settings.EAR_MIN_OPEN
 
 # Redis connection string — read from env, fall back to localhost
 REDIS_URL: str = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
@@ -156,13 +161,44 @@ def _average_encodings(encodings: list[np.ndarray]) -> np.ndarray:
     return np.mean(encodings, axis=0)
 
 
+ENCODINGS_PKL_CHECKSUM_PATH = ENCODINGS_PKL_PATH.with_suffix(".sha256")
+
+
+def _verify_pkl_integrity(pkl_path: Path) -> bytes:
+    """Read the pickle file, compute SHA-256, and verify against stored checksum.
+    
+    On first run (no .sha256 file), compute and store the checksum.
+    On subsequent runs, verify the file hasn't been tampered with.
+    Returns the raw file bytes if verification passes.
+    """
+    raw = pkl_path.read_bytes()
+    computed_hash = hashlib.sha256(raw).hexdigest()
+
+    checksum_path = pkl_path.with_suffix(".sha256")
+
+    if checksum_path.exists():
+        stored_hash = checksum_path.read_text().strip()
+        if computed_hash != stored_hash:
+            raise RuntimeError(
+                f"Integrity check FAILED for {pkl_path.name}. "
+                f"Expected SHA-256: {stored_hash}, Got: {computed_hash}. "
+                "The file may have been tampered with. Aborting."
+            )
+        log.info("   [INTEGRITY] %s checksum verified (%s)", pkl_path.name, computed_hash[:16])
+    else:
+        checksum_path.write_text(computed_hash)
+        log.info("   [INTEGRITY] Stored initial SHA-256 for %s (%s)", pkl_path.name, computed_hash[:16])
+
+    return raw
+
+
 def sync_encodings_pkl() -> None:
     if not ENCODINGS_PKL_PATH.exists():
         log.warning("encodings.pkl not found at %s", ENCODINGS_PKL_PATH)
         return
 
-    with open(ENCODINGS_PKL_PATH, "rb") as f:
-        data = pickle.load(f)
+    raw = _verify_pkl_integrity(ENCODINGS_PKL_PATH)
+    data = pickle.loads(raw)
 
     names: list[str] = data.get("names", [])
     encodings: list = data.get("encodings", [])
@@ -291,7 +327,7 @@ def calculate_ear(eye_points: list) -> float:
     A = np.linalg.norm(np.array(eye_points[1]) - np.array(eye_points[5]))
     B = np.linalg.norm(np.array(eye_points[2]) - np.array(eye_points[4]))
     C = np.linalg.norm(np.array(eye_points[0]) - np.array(eye_points[3]))
-    return (A + B) / (2.0 * C)
+    return float((A + B) / (2.0 * C))
 
 
 def compare_faces(
@@ -382,6 +418,18 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# ── HTTPS Enforcement and Security Headers ───────────────────────────────────
+app.add_middleware(HTTPSRedirectMiddleware)
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Content-Security-Policy"] = "default-src 'self'"
+    return response
+
 # ── Attach limiter to app state ──────────────────────────────────────────────
 app.state.limiter = limiter
 
@@ -390,7 +438,7 @@ app.state.limiter = limiter
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
     log.warning(
         "[RATE LIMIT] %s blocked on %s — limit: %s",
-        request.client.host,
+        request.client.host if request.client else "unknown",
         request.url.path,
         exc.detail,
     )
@@ -467,6 +515,42 @@ class EnrollRequest(BaseModel):
         if len(cleaned) > 100:
             raise ValueError("voter_id must be 100 characters or fewer.")
         return cleaned
+
+
+
+@app.post("/auth/refresh")
+async def auth_refresh(request: Request, response: Response):
+    """
+    Refresh an existing auth token.
+    
+    If the current token is valid and not yet expired, issue a fresh token
+    with a new expiry window. This prevents users from being logged out
+    during active voting sessions.
+    """
+    token = request.cookies.get("auth_token")
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    payload = decode_jwt(token)
+    voter_id = payload.get("voter_id")
+    role = payload.get("role")
+
+    if not voter_id or not role:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    new_token = create_jwt(voter_id, role)
+
+    response.set_cookie(
+        key="auth_token",
+        value=new_token,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        max_age=JWT_EXPIRY_HOURS * 3600,
+    )
+
+    log.info("[REFRESH] Token renewed for %s (role=%s)", voter_id, role)
+    return {"role": role, "voter_id": voter_id, "message": "Token refreshed"}
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -579,7 +663,7 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
     if len(ears) > 1:
         min_ear = min(ears)
         max_ear = max(ears)
-        if min_ear > 0.22 or max_ear < 0.25:
+        if min_ear > EAR_MIN_CLOSED or max_ear < EAR_MIN_OPEN:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Liveness check failed. Please blink while verifying.",
@@ -644,7 +728,7 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
         key=_COOKIE_NAME,
         value=token,
         httponly=True,
-        secure=False,          # Set to True in production (requires HTTPS)
+        secure=True,
         samesite="strict",
         max_age=_COOKIE_MAX_AGE,
         path="/",
@@ -683,7 +767,7 @@ async def auth_logout(request: Request):
     """
     response = JSONResponse(content={"message": "Logged out successfully."})
     response.delete_cookie(key=_COOKIE_NAME, path="/", samesite="strict")
-    log.info("[AUTH] Logout — cookie cleared for %s", request.client.host)
+    log.info("[AUTH] Logout — cookie cleared for %s", request.client.host if request.client else "unknown")
     return response
 
 
