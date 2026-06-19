@@ -75,7 +75,7 @@ MATCH_TOLERANCE: float = settings.MATCH_TOLERANCE
 REDIS_URL: str = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
 
 ENCODINGS_PKL_PATH = (
-    Path(__file__).resolve().parent.parent / "face-recognition" / "encodings.pkl"
+    Path(__file__).resolve().parent.parent / "face_recognition" / "encodings.pkl"
 )
 
 
