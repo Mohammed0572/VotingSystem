@@ -1,7 +1,11 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 
 module.exports = {
+  contracts_directory: "./contracts",
+  contracts_build_directory: "../src/contracts/",
+  migrations_directory: "./migrations",
   // See <http://truffleframework.com/docs/advanced/configuration>
   // for more about customizing your Truffle configuration!
   networks: {
