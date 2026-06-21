@@ -1,0 +1,193 @@
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.10-3776AB?style=for-the-badge&logo=python&logoColor=white" />
+  <img src="https://img.shields.io/badge/OpenCV-4.13-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white" />
+  <img src="https://img.shields.io/badge/dlib-20.0-008080?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" />
+</p>
+
+<h1 align="center">🧑‍💻 Face Recognition System</h1>
+
+<p align="center">
+  A real-time face recognition system built with Python, OpenCV, and dlib's deep learning model.<br/>
+  Register faces via webcam and identify them instantly in a live video feed.
+</p>
+
+---
+
+## ✨ Features
+
+- 🎥 **Real-time Recognition** — Identify registered faces from live webcam feed
+- 📸 **Multi-sample Registration** — Captures multiple samples for higher accuracy
+- ⚡ **Fast Detection** — Frame downscaling for smooth, low-latency performance
+- 🔧 **Configurable Tolerance** — Fine-tune matching strictness
+- 🧠 **128D Face Encodings** — Powered by dlib's ResNet-based deep metric learning model
+- 🗂️ **User Management** — List, add, and delete registered users via CLI
+
+---
+
+## 📁 Project Structure
+
+```
+FaceRecognition/
+│
+├── face_utils.py        # Core utilities — camera, detection, encoding, matching
+├── register.py          # Register a new face from webcam
+├── recognize.py         # Real-time face recognition
+├── list_users.py        # List all registered users
+├── delete_user.py       # Delete a registered user
+├── requirements.txt     # Python dependencies
+├── encodings.pkl        # Face encoding database (auto-generated, git-ignored)
+└── .gitignore
+```
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- **Python 3.10** installed on your system
+- A working **webcam**
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/Mohammed0572/Face-Recognition.git
+cd Face-Recognition
+
+# Install dependencies
+py -3.10 -m pip install -r requirements.txt
+```
+
+> **💡 Windows Note:** We use `dlib-bin` (pre-compiled binary) so you do **not** need Visual Studio Build Tools or a C++ compiler.
+
+> If `face-recognition` tries to compile dlib from source, install manually:
+> ```bash
+> py -3.10 -m pip install dlib-bin
+> py -3.10 -m pip install --no-deps face-recognition
+> py -3.10 -m pip install click face-recognition-models Pillow
+> ```
+
+---
+
+## 📖 Usage
+
+### 1️⃣ Register a Face
+
+```bash
+py -3.10 register.py --name "Your Name"
+```
+
+| Key | Action |
+|-----|--------|
+| `c` | Capture a face sample |
+| `q` | Quit without saving |
+
+> **Tips:** Ensure good lighting, face the camera, and slightly vary your angle between captures. The script collects **5 samples** by default and averages them into one stable encoding.
+
+<details>
+<summary>📌 All Registration Options</summary>
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--name "Name"` | *(prompted)* | Name to register |
+| `--samples N` | `5` | Number of face captures |
+| `--camera N` | `0` | Webcam index |
+| `--model hog\|cnn` | `hog` | Detection model (`cnn` = GPU) |
+| `--append` | off | Keep existing encodings for same name |
+
+</details>
+
+---
+
+### 2️⃣ Recognize Faces
+
+```bash
+py -3.10 recognize.py
+```
+
+| What You See | Meaning |
+|---|---|
+| 🟩 Green box + name | Recognized face |
+| 🟥 Red box + "Unknown" | Unregistered face |
+
+Press `q` to close.
+
+```bash
+# Show match confidence distance
+py -3.10 recognize.py --show-distance
+```
+
+<details>
+<summary>📌 All Recognition Options</summary>
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--tolerance F` | `0.5` | Match threshold (lower = stricter) |
+| `--show-distance` | off | Display match distance |
+| `--camera N` | `0` | Webcam index |
+| `--model hog\|cnn` | `hog` | Detection model |
+| `--frame-scale F` | `0.25` | Resize factor for speed |
+
+</details>
+
+---
+
+### 3️⃣ Manage Users
+
+```bash
+# List all registered users
+py -3.10 list_users.py
+
+# Delete a user
+py -3.10 delete_user.py "User Name"
+```
+
+---
+
+## 🧠 How It Works
+
+```
+┌──────────────┐     ┌─────────────────┐     ┌──────────────────┐
+│  Webcam Feed │ ──▶ │  Face Detection  │ ──▶ │  128D Encoding   │
+│              │     │  (HOG / CNN)     │     │  (dlib ResNet)   │
+└──────────────┘     └─────────────────┘     └────────┬─────────┘
+                                                       │
+                                                       ▼
+                                              ┌──────────────────┐
+                                              │  Compare against │
+                                              │  saved encodings │
+                                              │  (Euclidean dist)│
+                                              └────────┬─────────┘
+                                                       │
+                                                       ▼
+                                              ┌──────────────────┐
+                                              │  Match found?    │
+                                              │  ≤ 0.5 → Name   │
+                                              │  > 0.5 → Unknown│
+                                              └──────────────────┘
+```
+
+1. **Registration** — Captures multiple face images, computes 128-dimensional encodings using dlib's deep learning model, averages them for stability, and saves to `encodings.pkl`.
+
+2. **Recognition** — Each frame is downscaled (25%) for speed, face locations and encodings are extracted, then compared against all saved encodings using Euclidean distance. The closest match below the tolerance threshold is returned.
+
+---
+
+## 🛠️ Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| `ModuleNotFoundError: cv2` | `py -3.10 -m pip install opencv-python` |
+| `ModuleNotFoundError: dlib` | `py -3.10 -m pip install dlib-bin` |
+| Camera window not responding to keys | **Click on the camera window** to focus it, then press keys |
+| `Could not open webcam` | Check webcam connection, or try `--camera 1` |
+| No face detected | Improve lighting, face the camera directly |
+| Wrong person recognized | Re-register with more samples, lower `--tolerance` to `0.4` |
+
+---
+
+## 📜 License
+
+This project is open source and available under the [MIT License](LICENSE).
