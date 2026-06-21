@@ -88,16 +88,19 @@ const Voting = () => {
 
     setStage("sealing");
 
+    // Optimistic UI updates
+    setHasVoted(true);
+    setStage("sealed");
+
     try {
       // In a real scenario we'd get the tx object back and can read tx.receipt.transactionHash
       const tx = await contract.vote(selectedCandidateId, { from: account });
       setTxHash(tx.tx || "0x7a3f9c2e…b91c");
-      setHasVoted(true);
       await loadVotingData();
-      setStage("sealed");
     } catch (error) {
       console.error("Voting error:", error);
       alert('Error casting vote. You may have already voted or the transaction failed.');
+      setHasVoted(false);
       setStage("choose");
     }
   };
@@ -218,12 +221,15 @@ const Voting = () => {
                    No candidates are currently registered.
                  </div>
               ) : (
-                <ul className="mt-6 grid gap-3">
+                <fieldset className="mt-6 grid gap-3">
+                  <legend className="sr-only">List of candidates</legend>
                   {displayCandidates.map((c) => {
                     const active = selectedCandidateId === c.id;
                     return (
-                      <li key={c.id}>
+                      <div key={c.id}>
                         <button
+                          type="button"
+                          aria-pressed={active}
                           onClick={() => setSelectedCandidateId(c.id)}
                           className={`flex w-full items-center gap-5 rounded-md border p-5 text-left transition ${
                             active
@@ -260,10 +266,10 @@ const Voting = () => {
                             )}
                           </span>
                         </button>
-                      </li>
+                      </div>
                     );
                   })}
-                </ul>
+                </fieldset>
               )}
             </section>
 
