@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
 const AdminLogin = () => {
   const { t } = useLanguage();
+  const { setAuth } = useAuth();
   const [adminId, setAdminId] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [status, setStatus] = useState({ message: '', type: '' });
@@ -33,14 +35,13 @@ const AdminLogin = () => {
     updateStatus("Authenticating...", "info");
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/verify-face', {
+      const response = await fetch('http://127.0.0.1:8000/admin-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // allow browser to store the HttpOnly cookie
         body: JSON.stringify({ 
-          voter_id: adminId, 
-          image_base64: adminPassword,
-          nonce: crypto.randomUUID(),
-          timestamp: Date.now()
+          username: adminId, 
+          password: adminPassword,
         })
       });
 
@@ -48,7 +49,9 @@ const AdminLogin = () => {
         const data = await response.json();
         if (data.role === 'admin') {
           updateStatus("Authentication successful. Redirecting...", "success");
-          localStorage.setItem('adminToken', data.token || data.access_token);
+          // Token is now stored in an HttpOnly cookie by the backend.
+          // We just update React state with the non-sensitive session info.
+          setAuth({ voter_id: data.voter_id, role: data.role });
           setTimeout(() => navigate('/admin'), 1000);
         } else {
           updateStatus("Access denied. Admin privileges required.", "error");
@@ -66,9 +69,9 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="flex-grow flex flex-col items-center justify-center w-full">
+    <div className="grow flex flex-col items-center justify-center w-full">
       <div className="gov-panel w-full max-w-md overflow-hidden">
-        <div className="bg-[var(--cream)] border-b border-[var(--border)] p-6 text-center">
+        <div className="bg-(--cream) border-b border-(--border) p-6 text-center">
           <h2 className="text-2xl font-bold" style={{ fontFamily: 'var(--font-head)', color: 'var(--ashoka-navy)' }}>{t('adminlogin.title')}</h2>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{t('adminlogin.subtitle')}</p>
         </div>
@@ -105,7 +108,7 @@ const AdminLogin = () => {
         </div>
 
         {status.message && (
-          <div className={`p-4 border-l-4 rounded-sm ${status.type === 'error' ? 'bg-[#FFF5F5] border-[#C53030] text-[#C53030]' : status.type === 'success' ? 'bg-[#E8F5E9] border-[#138808] text-[#138808]' : 'bg-[#E8EEFF] border-[#0D3B8C] text-[#0D3B8C]'}`}>
+          <div className={`p-4 border-l-4 rounded-sm ${status.type === 'error' ? 'bg-[#FFF5F5] border-danger text-danger' : status.type === 'success' ? 'bg-india-green-light border-india-green text-india-green' : 'bg-india-blue-lt border-india-blue text-india-blue'}`}>
             <strong>{t('voter.status')}</strong> {status.message}
           </div>
         )}
