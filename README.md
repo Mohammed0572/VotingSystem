@@ -116,14 +116,12 @@ In recent security remediation cycles, all identified vulnerabilities have been 
 ## Project Structure
 
 ```text
-├── contracts/                    # Solidity smart contracts (Voting.sol)
-├── Database_API/                 # Python FastAPI authentication server (Face Auth)
-├── face-recognition/             # Face registration & recognition CLI scripts
-├── migrations/                   # Truffle deployment scripts
-├── src/                          # Frontend source files (HTML/CSS/JS)
-├── docker-compose.yml            # Docker orchestration (Redis + Face Auth + Frontend)
+├── backend/                      # Python FastAPI server (face_auth) & face recognition scripts
+├── blockchain/                   # Solidity smart contracts, migrations, and Truffle configs
+├── deploy/                       # Docker orchestration & deployment configs (nginx, vercel)
+├── docs/                         # Project documentation and security notes
+├── src/                          # Frontend source files (HTML/CSS/JS/TS)
 ├── index.ts                      # Express server entry point (Frontend)
-├── truffle-config.js             # Truffle network configuration
 └── README.md                     # Documentation
 ```
 
@@ -163,9 +161,9 @@ pnpm install
 Install the Python packages for the Face Authentication API:
 
 ```bash
-cd Database_API
+cd backend/face_auth
 pip install -r requirements.txt
-cd ..
+cd ../..
 ```
 
 _(Note: The `face_recognition` Python library requires `dlib`, which may need CMake and a C++ compiler installed on your system.)_
@@ -176,7 +174,7 @@ Copy the example environment files and set them up:
 
 ```bash
 cp .env.example .env
-cp Database_API/.env.example Database_API/.env
+cp backend/face_auth/.env.example backend/face_auth/.env
 ```
 
 Generate two unique secure secret keys by running this command twice:
@@ -185,12 +183,12 @@ Generate two unique secure secret keys by running this command twice:
 node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ```
 
-Place one key as `NODE_SECRET_KEY` in the root `.env` file, and the other as `FASTAPI_SECRET_KEY` in `Database_API/.env`.
+Place one key as `NODE_SECRET_KEY` in the root `.env` file, and the other as `FASTAPI_SECRET_KEY` in `backend/face_auth/.env`.
 
 ### 4. Start the Blockchain (Ganache)
 
 1. Open **Ganache** and create a new workspace (e.g., named "development").
-2. Link it to the `truffle-config.js` file in the project root.
+2. Link it to the `blockchain/truffle-config.js` file in the project root.
 3. Configure your **MetaMask** extension to connect to `http://localhost:7545` (Chain ID 1337) and import an account using one of Ganache's private keys.
 
 ### 5. Compile and Deploy Smart Contracts
@@ -200,16 +198,18 @@ Open a terminal in the root directory. You can deploy either to your local Ganac
 **For Local Development (Ganache):**
 
 ```bash
-truffle compile
-truffle migrate
+cd blockchain
+npx truffle compile
+npx truffle migrate
 ```
 
 **For Public Testnet (Sepolia):**
 Ensure you have set the `SEPOLIA_RPC_URL` (e.g., from [Alchemy](https://alchemy.com) or [Infura](https://infura.io)) and `MNEMONIC` in your `.env` file, and that your account has some Sepolia testnet ETH.
 
 ```bash
-truffle compile
-truffle migrate --network sepolia
+cd blockchain
+npx truffle compile
+npx truffle migrate --network sepolia
 ```
 
 ### 6. Build or Run the Frontend
@@ -236,7 +236,7 @@ You need to run two servers simultaneously in separate terminals:
 **Terminal 1: Start the Face Auth API**
 
 ```bash
-cd Database_API
+cd backend/face_auth
 python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
@@ -261,6 +261,7 @@ This project includes automated testing suites for the Smart Contracts, Backend 
 The solidity smart contracts are tested using Truffle and Mocha/Chai. Ensure Ganache is running before executing the tests.
 
 ```bash
+cd blockchain
 npx truffle test
 ```
 
@@ -269,7 +270,7 @@ npx truffle test
 The FastAPI backend is tested using `pytest`. The tests mock the face recognition modules to run quickly without needing real webcam input.
 
 ```bash
-cd Database_API
+cd backend/face_auth
 pytest
 ```
 
