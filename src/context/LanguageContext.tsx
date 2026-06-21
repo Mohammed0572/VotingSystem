@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-type Language = 'en' | 'hi' | 'kn' | 'ta';
+type Language = 'en' | 'hi' | 'kn' | 'ta' | 'ml';
 
 type Translations = {
   [key: string]: string;
@@ -57,6 +57,15 @@ const dictionary: Record<Language, Translations> = {
     'voting.action': 'Action',
     'voting.vote_btn': 'Vote',
     'voting.confirm': 'Confirm Vote',
+    // Home
+    'home.hero_title1': 'Your vote.',
+    'home.hero_title2': 'Sealed on chain.',
+    'home.hero_desc': "Prajatantra is India's multimodal, blockchain-secured voting platform. Verify with biometrics or facial recognition — and watch your ballot become an immutable record of the world's largest democracy.",
+    'home.secure_login': 'Secure Login',
+    'home.how_it_works': 'How it works',
+    'home.verify_vote': 'Verify vote',
+    'home.security': 'Security',
+    'home.about': 'About',
   },
   hi: {
     'layout.skip_main': 'मुख्य सामग्री पर जाएं',
@@ -195,6 +204,66 @@ const dictionary: Record<Language, Translations> = {
     'voting.action': 'செயல்',
     'voting.vote_btn': 'வாக்களிக்கவும்',
     'voting.confirm': 'வாக்கை உறுதிப்படுத்தவும்',
+  },
+  ml: {
+    // Layout
+    'layout.skip_main': 'പ്രധാന ഉള്ളടക്കത്തിലേക്ക് പോകുക',
+    'layout.screen_reader': 'സ്ക്രീൻ റീഡർ ആക്സസ്',
+    'layout.sub': 'പ്രജാതന്ത്ര ഇ-വോട്ടിംഗ് പ്ലാറ്റ്ഫോം',
+    'layout.title': 'പ്രജാതന്ത്ര ഇ-വോട്ടിംഗ് പ്ലാറ്റ്ഫോം',
+    'layout.desc': 'മൾട്ടി-മോഡൽ ബ്ലോക്ക്ചെയിൻ അടിസ്ഥാനമാക്കിയുള്ള വോട്ടിംഗ് സിസ്റ്റം • പൈലറ്റ് 2026',
+    'layout.btn': 'ഭാഷകൾ ▾',
+    'layout.voter_portal': 'വോട്ടർ പോർട്ടൽ',
+    'layout.admin_login': 'അഡ്മിൻ ലോഗിൻ',
+    'layout.cast_vote': 'വോട്ട് ചെയ്യുക',
+    'layout.admin': 'ഭരണം',
+    'layout.logout': 'ലോഗൗട്ട്',
+    // VoterLogin
+    'voter.title': 'വോട്ടർ ആധികാരികത',
+    'voter.subtitle': 'ഔദ്യോഗിക പൗര പോർട്ടൽ',
+    'voter.id_label': 'വോട്ടർ ഐഡന്റിഫിക്കേഷൻ നമ്പർ',
+    'voter.id_placeholder': 'ഉദാഹരണത്തിന് VTR-84291',
+    'voter.step2': 'ഐഡന്റിറ്റി പരിശോധന (ഘട്ടം 2)',
+    'voter.align_face': 'നിങ്ങളുടെ ഐഡന്റിറ്റി പരിശോധിക്കുന്നതിനായി ദയവായി നിങ്ങളുടെ മുഖം ഫ്രെയിമിനുള്ളിൽ ക്രമീകരിക്കുക.',
+    'voter.cam_inactive': 'ക്യാമറ നിർജ്ജീവമാണ്',
+    'voter.status': 'പദവി:',
+    'voter.enable_cam': 'ക്യാമറ പ്രവർത്തനക്ഷമമാക്കുക',
+    'voter.verify_btn': 'ഐഡന്റിറ്റി പരിശോധിച്ച് ലോഗിൻ ചെയ്യുക',
+    'voter.processing': 'പ്രോസസ്സ് ചെയ്യുന്നു...',
+    // AdminLogin
+    'adminlogin.title': 'അഡ്മിനിസ്ട്രേറ്റർ ആക്സസ്',
+    'adminlogin.subtitle': 'സിസ്റ്റം ആക്സസ് ചെയ്യുന്നതിന് നിങ്ങളുടെ സുരക്ഷിത അഡ്മിനിസ്ട്രേറ്റീവ് യോഗ്യതകൾ നൽകുക.',
+    'adminlogin.id_label': 'അഡ്മിനിസ്ട്രേറ്റർ ഐഡി',
+    'adminlogin.id_placeholder': 'ഉദാഹരണത്തിന് ADM-991',
+    'adminlogin.login_btn': 'സുരക്ഷിത അഡ്മിൻ ലോഗിൻ',
+    // Admin
+    'admin.title': 'സിസ്റ്റം ഭരണം',
+    'admin.subtitle': 'ഔദ്യോഗിക തിരഞ്ഞെടുപ്പ് പാരാമീറ്ററുകളും സ്ഥാനാർത്ഥികളും നിയന്ത്രിക്കുക.',
+    'admin.reg_candidate': 'സ്ഥാനാർത്ഥിയെ രജിസ്റ്റർ ചെയ്യുക',
+    'admin.cand_name': 'സ്ഥാനാർത്ഥിയുടെ മുഴുവൻ പേര്',
+    'admin.cand_party': 'രാഷ്ട്രീയ പാർട്ടി / വിഭാഗം',
+    'admin.add_btn': 'ഔദ്യോഗിക രേഖയിൽ ചേർക്കുക',
+    'admin.schedule': 'തിരഞ്ഞെടുപ്പ് ഷെഡ്യൂൾ',
+    'admin.start_date': 'വോട്ടിംഗ് ആരംഭിക്കുന്ന തീയതി',
+    'admin.end_date': 'വോട്ടിംഗ് അവസാനിക്കുന്ന തീയതി',
+    'admin.update_btn': 'ഔദ്യോഗിക ഷെഡ്യൂൾ അപ്ഡേറ്റ് ചെയ്യുക',
+    // Voting (General/Shared)
+    'voting.title': 'ഔദ്യോഗിക ബാലറ്റ്',
+    'voting.subtitle': 'ബ്ലോക്ക്ചെയിൻ സാങ്കേതികവിദ്യ ഉപയോഗിച്ച് നിങ്ങളുടെ വോട്ട് സുരക്ഷിതമായി രേഖപ്പെടുത്തുക.',
+    'voting.cand_name': 'സ്ഥാനാർത്ഥിയുടെ പേര്',
+    'voting.party': 'പാർട്ടി',
+    'voting.action': 'പ്രവർത്തനം',
+    'voting.vote_btn': 'വോട്ട് ചെയ്യുക',
+    'voting.confirm': 'വോട്ട് സ്ഥിരീകരിക്കുക',
+    // Home
+    'home.hero_title1': 'നിങ്ങളുടെ വോട്ട്.',
+    'home.hero_title2': 'ബ്ലോക്ക്ചെയിനിൽ സുരക്ഷിതമാക്കിയിരിക്കുന്നു.',
+    'home.hero_desc': "ഇന്ത്യയുടെ മൾട്ടിമോഡൽ, ബ്ലോക്ക്ചെയിൻ സുരക്ഷിതമായ വോട്ടിംഗ് പ്ലാറ്റ്ഫോമാണ് പ്രജാതന്ത്ര. ബയോമെട്രിക്സ് ഉപയോഗിച്ച് പരിശോധിക്കുക, നിങ്ങളുടെ ബാലറ്റ് ലോകത്തിലെ ഏറ്റവും വലിയ ജനാധിപത്യത്തിന്റെ മാറ്റമില്ലാത്ത രേഖയായി മാറുന്നത് കാണുക.",
+    'home.secure_login': 'സുരക്ഷിത ലോഗിൻ',
+    'home.how_it_works': 'ഇത് എങ്ങനെ പ്രവർത്തിക്കുന്നു',
+    'home.verify_vote': 'വോട്ട് പരിശോധിക്കുക',
+    'home.security': 'സുരക്ഷ',
+    'home.about': 'കുറിച്ച്',
   }
 };
 
