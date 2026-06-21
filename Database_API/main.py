@@ -1,6 +1,20 @@
 """
+Drop-in patch using slowapi + Redis backend.
+
+Changes from original main.py:
+1. Added Redis connection with fallback to in-memory
+2. Added Limiter with per-route limits
+3. Added custom error handler for 429 responses
+4. Added /verify-face → 5/minute per IP
+5. Added /enroll-face → 10/minute per IP (admin-only, less strict)
+6. Added /health    → 60/minute (monitoring tools)
+7. Added auth endpoints for session management
+
+Install:
+    pip install slowapi redis
+
+Run:
 Facial Recognition Authentication API for Decentralized Voting DApp
-===================================================================
 Uses dlib's ResNet-based 128D face encodings via the `face_recognition` library.
 Loads existing registered faces from Face Recognition/encodings.pkl on startup.
 
