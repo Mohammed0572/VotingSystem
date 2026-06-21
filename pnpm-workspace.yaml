@@ -12,3 +12,4 @@ allowBuilds:
   web3: set this to true or false
   web3-bzz: set this to true or false
   web3-shh: set this to true or false
+ignoreScripts: true
