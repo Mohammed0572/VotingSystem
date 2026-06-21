@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
+import Navbar from './components/Navbar';
+import Home from './pages/Home';
 import VoterLogin from './pages/VoterLogin';
 import AdminLogin from './pages/AdminLogin';
 import Admin from './pages/Admin';
@@ -19,20 +21,24 @@ function App() {
       <AuthProvider>
         <Web3Provider>
           <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Layout />}>
-              <Route index element={<VoterLogin />} />
-              <Route path="admin-login" element={<AdminLogin />} />
+            <Navbar />
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<VoterLogin />} />
+            <Route element={<ProtectedRoute allowedRole="user" />}>
+              <Route path="/voting" element={<Voting />} />
+            </Route>
+            
+            {/* Legacy Layout wrapper for Admin and static pages */}
+            <Route element={<Layout />}>
+              <Route path="/admin-login" element={<AdminLogin />} />
               <Route element={<ProtectedRoute allowedRole="admin" />}>
-                <Route path="admin" element={<Admin />} />
+                <Route path="/admin" element={<Admin />} />
               </Route>
-              <Route element={<ProtectedRoute allowedRole="user" />}>
-                <Route path="voting" element={<Voting />} />
-              </Route>
-              <Route path="terms" element={<Terms />} />
-              <Route path="privacy" element={<Privacy />} />
-              <Route path="accessibility" element={<Accessibility />} />
-              <Route path="contact" element={<Contact />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/accessibility" element={<Accessibility />} />
+              <Route path="/contact" element={<Contact />} />
             </Route>
           </Routes>
           </BrowserRouter>
