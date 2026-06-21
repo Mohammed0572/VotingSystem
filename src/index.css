@@ -1,179 +1,127 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@source "../src";
 
-@theme {
-  --color-saffron: #FF9933;
-  --color-saffron-light: #FFF3E0;
-  --color-india-blue: #0D3B8C;
-  --color-india-blue-mid: #1A56C4;
-  --color-india-blue-lt: #E8EEFF;
-  --color-ashoka-navy: #06206E;
-  --color-india-green: #138808;
-  --color-india-green-light: #E8F5E9;
-  --color-cream: #f8f5ec;
-  --color-border-color: #C8D0E0;
-  --color-text-primary: #0D1B3E;
-  --color-text-secondary: #4A5568;
-  --color-text-muted: #718096;
-  --color-danger: #C53030;
-  --color-success: #276749;
+@custom-variant dark (&:is(.dark *));
 
-  --font-body: 'Segoe UI', 'Inter', system-ui, sans-serif;
-  --font-head: 'Georgia', 'Times New Roman', serif;
-  --font-mono: 'Courier New', monospace;
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-saffron: var(--saffron);
+  --color-india-green: var(--india-green);
+  --color-ink: var(--ink);
+  --color-paper: var(--paper);
+  --color-paper-warm: var(--paper-warm);
+  --color-ashoka: var(--ashoka);
+  --color-hairline: var(--hairline);
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-hindi: "Noto Sans Devanagari", sans-serif;
 }
 
 :root {
-  --saffron:        var(--color-saffron);
-  --saffron-light:  var(--color-saffron-light);
-  --india-blue:     var(--color-india-blue);
-  --india-blue-mid: var(--color-india-blue-mid);
-  --india-blue-lt:  var(--color-india-blue-lt);
-  --ashoka-navy:    var(--color-ashoka-navy);
-  --green:          var(--color-india-green);
-  --green-light:    var(--color-india-green-light);
-  --cream:          var(--color-cream);
-  --border:         var(--color-border-color);
-  --text-primary:   var(--color-text-primary);
-  --text-secondary: var(--color-text-secondary);
-  --text-muted:     var(--color-text-muted);
-  --danger:         var(--color-danger);
-  --success:        var(--color-success);
+  --radius: 0.375rem;
 
-  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
-  --sp-5: 20px; --sp-6: 24px; --sp-8: 32px; --sp-10: 40px;
-  --sp-12: 48px; --sp-16: 64px;
+  --saffron: #ff671f;
+  --india-green: #046a38;
+  --ink: #0b1f3a;
+  --paper: #ffffff;
+  --paper-warm: #faf7f2;
+  --ashoka: #1e40af;
+  --hairline: #e5e7eb;
 
-  --font-head: var(--font-head);
-  --font-body: var(--font-body);
-  --font-mono: var(--font-mono);
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: var(--paper);
+  --card-foreground: var(--ink);
+  --popover: var(--paper);
+  --popover-foreground: var(--ink);
+  --primary: var(--saffron);
+  --primary-foreground: #ffffff;
+  --secondary: var(--india-green);
+  --secondary-foreground: #ffffff;
+  --muted: var(--paper-warm);
+  --muted-foreground: #64748b;
+  --accent: var(--ashoka);
+  --accent-foreground: #ffffff;
+  --destructive: #b91c1c;
+  --destructive-foreground: #ffffff;
+  --border: var(--hairline);
+  --input: var(--hairline);
+  --ring: var(--saffron);
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: var(--font-body); background: var(--cream); color: var(--text-primary); font-size: 16px; line-height: 1.6; }
-
-/* ─── LAYOUT ─────────────────────────────────── */
-.doc { max-width: 1080px; margin: 0 auto; padding: var(--sp-8) var(--sp-6); }
-.section { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: var(--sp-8); margin-bottom: var(--sp-8); }
-.section-title { font-family: var(--font-head); font-size: 22px; color: var(--ashoka-navy); border-bottom: 2px solid var(--saffron); padding-bottom: var(--sp-3); margin-bottom: var(--sp-6); }
-.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-6); }
-.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--sp-4); }
-label { font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .04em; display: block; margin-bottom: var(--sp-2); }
-
-/* ─── PAGE HEADER DOC ────────────────────────── */
-.doc-header { text-align: center; margin-bottom: var(--sp-10); }
-.doc-header h1 { font-family: var(--font-head); font-size: 32px; color: var(--ashoka-navy); }
-.doc-header p  { color: var(--text-secondary); margin-top: var(--sp-2); font-size: 15px; }
-.badge { display: inline-block; background: var(--india-blue-lt); color: var(--india-blue); font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; margin: var(--sp-2) var(--sp-1); letter-spacing: .05em; }
-
-/* ─── GOVT PORTAL NAVBAR ─────────────────────── */
-.gov-skip { background: var(--ashoka-navy); color: #A0B4D8; font-size: 11px; padding: 3px var(--sp-6); }
-.gov-skip a { color: #A0B4D8; text-decoration: underline; }
-.gov-top-strip { background: var(--ashoka-navy); padding: 10px var(--sp-6); display: flex; align-items: center; gap: var(--sp-4); }
-.gov-emblem { width: 44px; height: 44px; background: var(--cream); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; color: var(--ashoka-navy); text-align: center; line-height: 1.2; flex-shrink: 0; }
-.gov-titles h2 { color: var(--cream); font-family: var(--font-head); font-size: 17px; }
-.gov-titles p  { color: #A0B4D8; font-size: 12px; }
-.gov-titles .hi { font-size: 13px; color: #E2E8F0; }
-.gov-nav { background: var(--india-blue); display: flex; align-items: center; padding: 0 var(--sp-6); border-top: 3px solid var(--saffron); }
-.gov-nav a { color: #E2E8F0; font-size: 13px; font-weight: 500; padding: 10px 16px; text-decoration: none; border-bottom: 3px solid transparent; display: block; cursor: pointer; }
-.gov-nav a.active { color: var(--cream); border-bottom-color: var(--saffron); background: rgba(255,255,255,.08); }
-.gov-nav a:hover { background: rgba(255,255,255,.06); }
-.gov-nav .spacer { flex: 1; }
-.lang-btn { color: #E2E8F0; font-size: 12px; border: 1px solid rgba(255,255,255,.25); padding: 4px 10px; border-radius: 4px; background: transparent; cursor: pointer; }
-
-/* ─── HERO BANNER ─────────────────────────────── */
-.hero-banner { background: linear-gradient(135deg, var(--ashoka-navy) 0%, var(--india-blue) 100%); padding: var(--sp-8) var(--sp-6); display: flex; align-items: center; justify-content: space-between; gap: var(--sp-8); }
-.hero-text h1 { font-family: var(--font-head); font-size: 26px; color: var(--cream); line-height: 1.3; }
-.hero-text p  { color: #A0B4D8; font-size: 14px; margin-top: var(--sp-3); max-width: 480px; }
-.hero-text .voter-id { display: inline-block; background: var(--saffron); color: var(--ashoka-navy); font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 4px; margin-top: var(--sp-4); letter-spacing: .06em; }
-.hero-graphic { flex-shrink: 0; width: 120px; height: 100px; background: rgba(255,255,255,.07); border-radius: 8px; border: 1px solid rgba(255,255,255,.12); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,.25); font-size: 48px; }
-
-/* ─── MAIN CONTENT ───────────────────────────── */
-.main-content { padding: var(--sp-6); display: grid; grid-template-columns: 260px 1fr; gap: var(--sp-6); }
-
-/* ─── SIDEBAR ────────────────────────────────── */
-.sidebar-card { background: var(--cream); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
-.sidebar-card-head { background: var(--india-blue); color: var(--cream); font-size: 13px; font-weight: 700; padding: var(--sp-3) var(--sp-4); text-transform: uppercase; letter-spacing: .06em; border-left: 4px solid var(--saffron); }
-.sidebar-item { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text-primary); text-decoration: none; cursor: pointer; }
-.sidebar-item:last-child { border-bottom: none; }
-.sidebar-item.active { background: var(--india-blue-lt); color: var(--india-blue); font-weight: 600; border-left: 3px solid var(--india-blue); }
-.sidebar-icon { width: 20px; height: 20px; background: var(--india-blue-lt); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--india-blue); flex-shrink: 0; }
-.sidebar-item.active .sidebar-icon { background: var(--india-blue); color: var(--cream); }
-
-.status-card { background: var(--cream); border: 1px solid var(--border); border-radius: 6px; margin-top: var(--sp-4); overflow: hidden; }
-.status-head { background: var(--green); color: var(--cream); font-size: 12px; font-weight: 700; padding: var(--sp-2) var(--sp-4); text-transform: uppercase; letter-spacing: .05em; }
-.status-body { padding: var(--sp-4); }
-.status-row { display: flex; justify-content: space-between; font-size: 12px; padding: 4px 0; border-bottom: 1px dashed var(--border); }
-.status-row:last-child { border-bottom: none; }
-.status-row .val { font-weight: 700; color: var(--india-blue); }
-
-/* ─── VOTING CARD ────────────────────────────── */
-.vote-card { background: var(--cream); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
-.vote-card-head { background: var(--india-blue); color: var(--cream); padding: var(--sp-4) var(--sp-5); display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
-.vote-card-head h3 { font-family: var(--font-head); font-size: 16px; margin: 0; }
-.vote-card-head p  { font-size: 12px; color: #A0B4D8; margin-top: 2px; margin-bottom: 0; }
-.step-pill { background: var(--saffron); color: var(--ashoka-navy); font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 999px; flex-shrink: 0; }
-
-.progress-bar { height: 4px; background: var(--border); }
-.progress-fill { height: 4px; background: var(--saffron); width: 33%; }
-
-.vote-body { padding: var(--sp-5); }
-.vote-body h4 { font-size: 14px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .05em; margin-bottom: var(--sp-4); }
-
-.candidate-row { display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-4); border: 1.5px solid var(--border); border-radius: 6px; margin-bottom: var(--sp-3); cursor: pointer; transition: border-color .15s, background .15s; }
-.candidate-row:hover { border-color: var(--india-blue-mid); background: var(--india-blue-lt); }
-.candidate-row.selected { border-color: var(--india-blue); background: var(--india-blue-lt); }
-.radio-outer { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.candidate-row.selected .radio-outer { border-color: var(--india-blue); }
-.radio-inner { width: 10px; height: 10px; border-radius: 50%; background: var(--india-blue); display: none; }
-.candidate-row.selected .radio-inner { display: block; }
-.cand-symbol { width: 40px; height: 40px; background: var(--cream); border: 1px solid var(--border); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
-.cand-info { flex: 1; }
-.cand-info .name { font-weight: 700; font-size: 15px; color: var(--text-primary); }
-.cand-info .party { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-.cand-info .constit { font-size: 11px; color: var(--india-blue); font-weight: 600; letter-spacing: .04em; }
-.cand-no { font-size: 22px; font-weight: 800; color: var(--border); font-family: var(--font-mono); min-width: 28px; text-align: right; }
-.candidate-row.selected .cand-no { color: var(--india-blue-mid); }
-
-.vote-footer { padding: var(--sp-4) var(--sp-5); background: var(--cream); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); }
-.btn-primary { background: var(--india-blue); color: var(--cream); border: none; padding: 10px 24px; font-size: 14px; font-weight: 700; border-radius: 4px; cursor: pointer; letter-spacing: .03em; display: flex; align-items: center; gap: var(--sp-2); }
-.btn-secondary { background: var(--cream); color: var(--india-blue); border: 1.5px solid var(--india-blue); padding: 10px 20px; font-size: 14px; font-weight: 600; border-radius: 4px; cursor: pointer; }
-.disclaimer { font-size: 11px; color: var(--text-muted); max-width: 260px; line-height: 1.4; }
-
-/* ─── FOOTER ─────────────────────────────────── */
-.gov-footer { background: var(--ashoka-navy); color: #A0B4D8; font-size: 11px; padding: var(--sp-4) var(--sp-6); display: flex; justify-content: space-between; }
-.gov-footer a { color: #A0B4D8; text-decoration: underline; }
-
-/* ─── LEGACY CLASSES MODIFIED TO MATCH NEW STYLE ─── */
-.gov-panel {
-  background: var(--cream);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-}
-.gov-input {
-  width: 100%;
-  background: var(--cream);
-  border: 1px solid var(--border);
-  color: var(--text-primary);
-  border-radius: 4px;
-  padding: 10px 16px;
-  outline: none;
-  transition: all 0.2s;
-}
-.gov-input:focus {
-  border-color: var(--india-blue);
-  box-shadow: 0 0 0 3px var(--india-blue-lt);
-}
-.gov-button {
-  background: var(--india-blue);
-  color: var(--cream);
-  font-weight: 700;
-  border-radius: 4px;
-  padding: 10px 24px;
-  text-align: center;
-  transition: all 0.2s;
-}
-.gov-button:hover {
-  background: var(--ashoka-navy);
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html {
+    font-family: var(--font-sans);
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  code,
+  kbd,
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+  .font-hindi {
+    font-family: var(--font-hindi);
+  }
 }
 
+@utility tricolor-bar {
+  background: linear-gradient(
+    90deg,
+    #ff671f 0% 33.33%,
+    #ffffff 33.33% 66.66%,
+    #046a38 66.66% 100%
+  );
+}
+
+@utility ashoka-spin {
+  animation: ashoka-rotate 16s linear infinite;
+}
+
+@keyframes ashoka-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
