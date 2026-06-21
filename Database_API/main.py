@@ -1,6 +1,4 @@
 """
-Rate Limiting Integration — VotingSystem Face Auth API
-=======================================================
 Drop-in patch using slowapi + Redis backend.
 
 Changes from original main.py:
@@ -16,6 +14,11 @@ Install:
     pip install slowapi redis
 
 Run:
+Facial Recognition Authentication API for Decentralized Voting DApp
+Uses dlib's ResNet-based 128D face encodings via the `face_recognition` library.
+Loads existing registered faces from Face Recognition/encodings.pkl on startup.
+
+Run with Python 3.10:
     py -3.10 -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 """
 
@@ -23,7 +26,6 @@ Run:
 import os
 import json
 import base64
-import hashlib
 import pickle
 import sqlite3
 import logging
@@ -37,17 +39,10 @@ import jwt
 import numpy as np
 import dotenv
 import face_recognition
-import redis as redis_client
-from fastapi import FastAPI, HTTPException, Depends, Request, Response, status
+from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel, field_validator
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
-import bcrypt
 
 # ── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -58,68 +53,30 @@ logging.basicConfig(
 log = logging.getLogger("face-auth")
 
 # ── Environment ──────────────────────────────────────────────────────────────
-from config import settings
+dotenv.load_dotenv()
 
-SECRET_KEY: str = settings.resolved_secret_key
-JWT_EXPIRY_HOURS: int = settings.JWT_EXPIRY_HOURS
+SECRET_KEY: str = os.environ.get("SECRET_KEY", "")
+if not SECRET_KEY:
+    raise RuntimeError(
+        "SECRET_KEY is not set. Copy Database_API/.env.example to .env and configure it."
+    )
 
-def get_password_hash(password: str) -> str:
-    salt = bcrypt.gensalt()
-    return bcrypt.hashpw(password.encode("utf-8"), salt).decode("ascii")
+# JWT expiration — default 24 hours for voter sessions
+JWT_EXPIRY_HOURS: int = int(os.environ.get("JWT_EXPIRY_HOURS", "24"))
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    try:
-        return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("ascii"))
-    except ValueError:
-        return False
-MATCH_TOLERANCE: float = settings.MATCH_TOLERANCE
-EAR_MIN_CLOSED: float = settings.EAR_MIN_CLOSED
-EAR_MIN_OPEN: float = settings.EAR_MIN_OPEN
+# Face distance threshold — faces with distance <= this are a match.
+# Lower = stricter.  Standard face_recognition recommendation is 0.6;
+# your system uses 0.5 for stricter matching.
+MATCH_TOLERANCE: float = float(os.environ.get("MATCH_TOLERANCE", "0.5"))
 
-# Redis connection string — read from env, fall back to localhost
-REDIS_URL: str = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
-
+# Path to the Face Recognition encodings pickle file
 ENCODINGS_PKL_PATH = (
-    Path(__file__).resolve().parent.parent / "face-recognition" / "encodings.pkl"
+    Path(__file__).resolve().parent.parent / "Face Recognition" / "encodings.pkl"
 )
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# RATE LIMITER SETUP
-# ═══════════════════════════════════════════════════════════════════════════
-
-def _build_limiter() -> Limiter:
-    """
-    Try to connect to Redis. If Redis is unavailable (e.g., dev without
-    Docker), fall back to slowapi's in-memory store with a warning.
-
-    In production, Redis MUST be running — in-memory doesn't persist
-    across workers and won't protect a multi-process uvicorn deployment.
-    """
-    try:
-        # Ping Redis to verify the connection before committing
-        r = redis_client.from_url(REDIS_URL, socket_connect_timeout=2)
-        r.ping()
-        log.info("Rate limiter: Redis backend connected at %s", REDIS_URL)
-        return Limiter(
-            key_func=get_remote_address,
-            storage_uri=REDIS_URL,
-        )
-    except Exception as exc:
-        log.warning(
-            "Redis unavailable (%s). Falling back to in-memory rate limiter. "
-            "NOT suitable for multi-worker production deployments.",
-            exc,
-        )
-        # In-memory fallback — omit storage_uri
-        return Limiter(key_func=get_remote_address)
-
-
-limiter = _build_limiter()
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# DATABASE SETUP  (unchanged from your original)
+# 1.  DATABASE SETUP
 # ═══════════════════════════════════════════════════════════════════════════
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "face_voter_db.sqlite")
@@ -127,6 +84,7 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "face_voter_db.sqlite")
 
 @contextmanager
 def get_db():
+    """Context manager that guarantees the connection is always closed."""
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     try:
@@ -136,6 +94,7 @@ def get_db():
 
 
 def init_db() -> None:
+    """Create the voters table if it doesn't exist."""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("""
@@ -145,60 +104,36 @@ def init_db() -> None:
                 face_encoding  TEXT NOT NULL
             )
         """)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS admins (
-                admin_id      TEXT PRIMARY KEY NOT NULL,
-                password_hash TEXT NOT NULL,
-                created_at    TEXT NOT NULL DEFAULT (datetime('now')),
-                is_active     INTEGER NOT NULL DEFAULT 1
-            )
-        """)
         conn.commit()
     log.info("Database initialised at %s", DB_PATH)
 
 
 def _average_encodings(encodings: list[np.ndarray]) -> np.ndarray:
+    """
+    Average multiple face encodings into a single stable 128D vector.
+    This matches the approach used in Face Recognition/face_utils.py
+    (average_encodings) for consistency.
+    """
     return np.mean(encodings, axis=0)
 
 
-ENCODINGS_PKL_CHECKSUM_PATH = ENCODINGS_PKL_PATH.with_suffix(".sha256")
-
-
-def _verify_pkl_integrity(pkl_path: Path) -> bytes:
-    """Read the pickle file, compute SHA-256, and verify against stored checksum.
-    
-    On first run (no .sha256 file), compute and store the checksum.
-    On subsequent runs, verify the file hasn't been tampered with.
-    Returns the raw file bytes if verification passes.
-    """
-    raw = pkl_path.read_bytes()
-    computed_hash = hashlib.sha256(raw).hexdigest()
-
-    checksum_path = pkl_path.with_suffix(".sha256")
-
-    if checksum_path.exists():
-        stored_hash = checksum_path.read_text().strip()
-        if computed_hash != stored_hash:
-            raise RuntimeError(
-                f"Integrity check FAILED for {pkl_path.name}. "
-                f"Expected SHA-256: {stored_hash}, Got: {computed_hash}. "
-                "The file may have been tampered with. Aborting."
-            )
-        log.info("   [INTEGRITY] %s checksum verified (%s)", pkl_path.name, computed_hash[:16])
-    else:
-        checksum_path.write_text(computed_hash)
-        log.info("   [INTEGRITY] Stored initial SHA-256 for %s (%s)", pkl_path.name, computed_hash[:16])
-
-    return raw
-
-
 def sync_encodings_pkl() -> None:
+    """
+    Load Face Recognition/encodings.pkl and insert each registered face
+    into the SQLite voters table.
+
+    When a person has multiple encoding entries (e.g., 5 webcam samples),
+    they are averaged into a single 128D vector before storage — matching
+    the approach used by register.py → face_utils.average_encodings().
+
+    Existing DB entries are NOT overwritten (preserves manual role changes).
+    """
     if not ENCODINGS_PKL_PATH.exists():
         log.warning("encodings.pkl not found at %s", ENCODINGS_PKL_PATH)
         return
 
-    raw = _verify_pkl_integrity(ENCODINGS_PKL_PATH)
-    data = pickle.loads(raw)
+    with open(ENCODINGS_PKL_PATH, "rb") as f:
+        data = pickle.load(f)
 
     names: list[str] = data.get("names", [])
     encodings: list = data.get("encodings", [])
@@ -207,7 +142,11 @@ def sync_encodings_pkl() -> None:
         log.warning("encodings.pkl has mismatched names/encodings — skipping sync")
         return
 
+    # ── Group encodings by normalized name ────────────────────────────────
+    # encodings.pkl can store multiple entries per person (N webcam samples).
+    # We collect them all and average per person for a single stable vector.
     from collections import defaultdict
+
     grouped: dict[str, list[np.ndarray]] = defaultdict(list)
     for name, encoding in zip(names, encodings):
         voter_id = name.strip().lower()
@@ -216,68 +155,63 @@ def sync_encodings_pkl() -> None:
     with get_db() as conn:
         cursor = conn.cursor()
         synced = 0
+
         for voter_id, enc_list in grouped.items():
+            # Only insert if not already present in DB
             cursor.execute("SELECT 1 FROM voters WHERE voter_id = ?", (voter_id,))
             if cursor.fetchone() is not None:
                 continue
+
+            # Average all samples into one encoding
             averaged = _average_encodings(enc_list)
             encoding_json = json.dumps(averaged.tolist())
+
             cursor.execute(
                 "INSERT INTO voters (voter_id, role, face_encoding) VALUES (?, ?, ?)",
                 (voter_id, "user", encoding_json),
             )
             synced += 1
-            log.info("   [SYNC] Imported '%s' (averaged %d sample(s))", voter_id, len(enc_list))
+            log.info(
+                "   [SYNC] Imported '%s' (averaged %d sample(s))",
+                voter_id,
+                len(enc_list),
+            )
+
         conn.commit()
 
-    log.info("Synced %d new face(s) from encodings.pkl", synced)
+    unique_names = len(grouped)
+    log.info(
+        "Synced %d new face(s) from encodings.pkl (%d unique people, %d total samples)",
+        synced,
+        unique_names,
+        len(names),
+    )
 
 
 def _seed_admin() -> None:
+    """Ensure an admin account exists for the admin panel."""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT 1 FROM admins")
+        cursor.execute("SELECT 1 FROM voters WHERE voter_id = 'admin'")
         if cursor.fetchone() is None:
-            # First boot scenario
-            admin_pass = settings.ADMIN_PASSWORD
-            
-            if not admin_pass:
-                raise ValueError("ADMIN_PASSWORD environment variable is missing. You MUST set a secure ADMIN_PASSWORD in the .env file before starting the server.")
-                
-            if len(admin_pass) < 12:
-                raise ValueError("ADMIN_PASSWORD must be at least 12 characters long.")
-                
-            if not any(char.isdigit() for char in admin_pass):
-                raise ValueError("ADMIN_PASSWORD must contain at least one digit.")
-                
-            if admin_pass.lower() in ["admin123", "password", "admin123456", "password123"]:
-                raise ValueError("ADMIN_PASSWORD is set to a known weak value. Choose a stronger password.")
-
-            hashed = get_password_hash(admin_pass)
+            dummy = json.dumps(np.zeros(128).tolist())
             cursor.execute(
-                "INSERT INTO admins (admin_id, password_hash) VALUES (?, ?)",
-                (settings.ADMIN_USERNAME, hashed),
+                "INSERT INTO voters (voter_id, role, face_encoding) VALUES (?, ?, ?)",
+                ("admin", "admin", dummy),
             )
             conn.commit()
-            log.info("   [SEED] Created initial admin account in admins table")
+            log.info("   [SEED] Created admin account")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# IMAGE / FACE UTILITIES  (unchanged)
+# 2.  IMAGE DECODING UTILITY
 # ═══════════════════════════════════════════════════════════════════════════
-
-# ── NEW: image size guard ────────────────────────────────────────────────────
-MAX_IMAGE_B64_BYTES = 2_000_000   # ~1.5 MB decoded
-
 
 def decode_base64_image(image_base64: str) -> np.ndarray:
-    """Decode Base64 image. Rejects oversized payloads (DoS guard)."""
-    if len(image_base64) > MAX_IMAGE_B64_BYTES:
-        raise ValueError(
-            f"Image payload too large ({len(image_base64)} bytes). "
-            f"Maximum allowed: {MAX_IMAGE_B64_BYTES} bytes."
-        )
-
+    """
+    Decode a Base64-encoded image string into an OpenCV BGR numpy array.
+    Accepts raw Base64 or data-URI prefix (data:image/png;base64,...).
+    """
     if "," in image_base64:
         image_base64 = image_base64.split(",", 1)[1]
 
@@ -295,58 +229,78 @@ def decode_base64_image(image_base64: str) -> np.ndarray:
     return img
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# 3.  FACE EMBEDDING — REAL dlib ResNet model via face_recognition
+# ═══════════════════════════════════════════════════════════════════════════
+
 def get_face_embedding(image: np.ndarray) -> Optional[np.ndarray]:
-    details = get_face_details(image)
-    return details[0] if details else None
+    """
+    Extract a 128-dimensional face embedding from a BGR image using
+    dlib's ResNet model (via face_recognition library).
 
-
-def get_face_details(image: np.ndarray) -> Optional[tuple[np.ndarray, dict]]:
+    Returns:
+        np.ndarray of shape (128,) on success, None if no face detected.
+    """
+    # face_recognition expects RGB
     rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    # Detect face locations (HOG model for speed)
     face_locations = face_recognition.face_locations(rgb, model="hog")
 
     if not face_locations:
         return None
 
+    # Use the largest face if multiple detected
     if len(face_locations) > 1:
         face_locations = [
-            max(face_locations, key=lambda loc: (loc[2] - loc[0]) * (loc[1] - loc[3]))
+            max(
+                face_locations,
+                key=lambda loc: (loc[2] - loc[0]) * (loc[1] - loc[3]),
+            )
         ]
 
+    # Compute the 128D encoding
     encodings = face_recognition.face_encodings(rgb, face_locations)
+
     if not encodings:
         return None
 
-    landmarks = face_recognition.face_landmarks(rgb, face_locations)
-    if not landmarks:
-        return None
-
-    return encodings[0], landmarks[0]
+    return encodings[0]
 
 
-def calculate_ear(eye_points: list) -> float:
-    A = np.linalg.norm(np.array(eye_points[1]) - np.array(eye_points[5]))
-    B = np.linalg.norm(np.array(eye_points[2]) - np.array(eye_points[4]))
-    C = np.linalg.norm(np.array(eye_points[0]) - np.array(eye_points[3]))
-    return (A + B) / (2.0 * C)
-
+# ═══════════════════════════════════════════════════════════════════════════
+# 4.  FACE COMPARISON — Euclidean distance (matching your system)
+# ═══════════════════════════════════════════════════════════════════════════
 
 def compare_faces(
     known_encoding: np.ndarray,
     test_encoding: np.ndarray,
     tolerance: float = MATCH_TOLERANCE,
 ) -> tuple[bool, float]:
-    distance = float(face_recognition.face_distance([known_encoding], test_encoding)[0])
+    """
+    Compare two face encodings using Euclidean distance.
+
+    Returns:
+        (is_match, distance) — is_match is True if distance <= tolerance.
+    """
+    distance = float(
+        face_recognition.face_distance([known_encoding], test_encoding)[0]
+    )
     return distance <= tolerance, distance
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# JWT HELPERS  (unchanged)
+# 5.  JWT HELPERS
 # ═══════════════════════════════════════════════════════════════════════════
 
 security = HTTPBearer(auto_error=False)
 
 
 def create_jwt(voter_id: str, role: str) -> str:
+    """
+    Create a JWT with an expiration claim.
+    The token contains voter_id, role, and exp.
+    """
     payload = {
         "voter_id": voter_id,
         "role": role,
@@ -357,6 +311,7 @@ def create_jwt(voter_id: str, role: str) -> str:
 
 
 def decode_jwt(token: str) -> dict:
+    """Verify and decode a JWT. Raises on invalid/expired tokens."""
     try:
         return jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
     except jwt.ExpiredSignatureError:
@@ -372,22 +327,18 @@ def decode_jwt(token: str) -> dict:
 
 
 async def require_admin(
-    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> dict:
-    # Accept token from Authorization Bearer header OR HttpOnly cookie
-    token: Optional[str] = None
-    if credentials is not None:
-        token = credentials.credentials
-    else:
-        token = request.cookies.get("auth_token")
-
-    if token is None:
+    """
+    Dependency that verifies the caller is an authenticated admin.
+    Use on admin-only endpoints.
+    """
+    if credentials is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated. Provide a Bearer token or log in first.",
+            detail="Authorization header missing. Provide a Bearer token.",
         )
-    payload = decode_jwt(token)
+    payload = decode_jwt(credentials.credentials)
     if payload.get("role") != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -397,63 +348,31 @@ async def require_admin(
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# FASTAPI APPLICATION
+# 6.  FASTAPI APPLICATION
 # ═══════════════════════════════════════════════════════════════════════════
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Startup and shutdown logic for the application."""
+    # ── Startup ───────────────────────────────────────────────────────────
     log.info("Starting Face Authentication API...")
     init_db()
     sync_encodings_pkl()
     _seed_admin()
     log.info("Face Authentication API ready.")
     yield
+    # ── Shutdown ──────────────────────────────────────────────────────────
     log.info("Face Authentication API shutting down.")
 
 
 app = FastAPI(
     title="Voting DApp — Face Auth API",
-    version="3.1.0",
+    version="3.0.0",
     description="Facial-recognition authentication for the Decentralized Voting System.",
     lifespan=lifespan,
 )
 
-# ── HTTPS Enforcement and Security Headers ───────────────────────────────────
-app.add_middleware(HTTPSRedirectMiddleware)
-
-@app.middleware("http")
-async def add_security_headers(request: Request, call_next):
-    response = await call_next(request)
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["Content-Security-Policy"] = "default-src 'self'"
-    return response
-
-# ── Attach limiter to app state ──────────────────────────────────────────────
-app.state.limiter = limiter
-
-# ── Custom 429 handler — returns clean JSON instead of slowapi's default ─────
-@app.exception_handler(RateLimitExceeded)
-async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
-    log.warning(
-        "[RATE LIMIT] %s blocked on %s — limit: %s",
-        request.client.host,
-        request.url.path,
-        exc.detail,
-    )
-    return JSONResponse(
-        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-        content={
-            "detail": "Too many requests. Please wait before trying again.",
-            "limit": str(exc.detail),
-            "path": str(request.url.path),
-        },
-        headers={"Retry-After": "60"},
-    )
-
-
-# ── CORS ─────────────────────────────────────────────────────────────────────
+# CORS — allow the frontend running on the Express static server
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -466,18 +385,11 @@ app.add_middleware(
 )
 
 
-# ── Schemas ───────────────────────────────────────────────────────────────────
+# ── Request / Response Schemas ───────────────────────────────────────────
 
 class FaceVerifyRequest(BaseModel):
     voter_id: str
-    images_base64: list[str]
-
-    @field_validator("images_base64")
-    @classmethod
-    def must_have_images(cls, v: list[str]) -> list[str]:
-        if not v:
-            raise ValueError("images_base64 must not be empty.")
-        return v
+    image_base64: str
 
     @field_validator("voter_id")
     @classmethod
@@ -490,15 +402,11 @@ class FaceVerifyRequest(BaseModel):
         return cleaned
 
 
-class AdminLoginRequest(BaseModel):
-    username: str
-    password: str
-
 class AuthResponse(BaseModel):
+    token: str
     role: str
     voter_id: str
-    # token is now delivered via HttpOnly cookie, NOT in the response body
-    # distance REMOVED — was leaking face match proximity to client
+    distance: float
 
 
 class EnrollRequest(BaseModel):
@@ -517,186 +425,53 @@ class EnrollRequest(BaseModel):
         return cleaned
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# AUTH SESSION ENDPOINTS
-# ═══════════════════════════════════════════════════════════════════════════
-
-@app.get("/auth/me")
-async def auth_me(request: Request):
-    """Return session info from the HttpOnly cookie (used by frontend to hydrate auth state)."""
-    token = request.cookies.get("auth_token")
-    if not token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    payload = decode_jwt(token)
-    return {"role": payload.get("role"), "voter_id": payload.get("voter_id")}
-
-
-@app.post("/auth/logout")
-async def auth_logout(response: Response):
-    """Clear the auth cookie."""
-    response.delete_cookie(
-        key="auth_token",
-        httponly=True,
-        secure=True,
-        samesite="strict",
-    )
-    return {"message": "Logged out"}
-
-
-@app.post("/auth/refresh")
-async def auth_refresh(request: Request, response: Response):
-    """
-    Refresh an existing auth token.
-    
-    If the current token is valid and not yet expired, issue a fresh token
-    with a new expiry window. This prevents users from being logged out
-    during active voting sessions.
-    """
-    token = request.cookies.get("auth_token")
-    if not token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
-    payload = decode_jwt(token)
-    voter_id = payload.get("voter_id")
-    role = payload.get("role")
-
-    if not voter_id or not role:
-        raise HTTPException(status_code=401, detail="Invalid token payload")
-
-    new_token = create_jwt(voter_id, role)
-
-    response.set_cookie(
-        key="auth_token",
-        value=new_token,
-        httponly=True,
-        secure=True,
-        samesite="strict",
-        max_age=JWT_EXPIRY_HOURS * 3600,
-    )
-
-    log.info("[REFRESH] Token renewed for %s (role=%s)", voter_id, role)
-    return {"role": role, "voter_id": voter_id, "message": "Token refreshed"}
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# ENDPOINTS
-# ═══════════════════════════════════════════════════════════════════════════
+# ── Health Check ─────────────────────────────────────────────────────────
 
 @app.get("/health")
-@limiter.limit("60/minute")          # monitoring tools get generous allowance
-async def health(request: Request):  # Request param required by slowapi
+async def health():
     """Quick health check for monitoring."""
-    return {"status": "ok", "service": "face-auth", "version": "3.1.0"}
+    return {"status": "ok", "service": "face-auth", "version": "3.0.0"}
 
 
-# Cookie configuration constants
-_COOKIE_NAME = "auth_token"
-_COOKIE_MAX_AGE = int(timedelta(hours=JWT_EXPIRY_HOURS).total_seconds())  # seconds
-
-
-@app.post("/admin-login")
-@limiter.limit("5/minute")
-async def admin_login(request: Request, body: AdminLoginRequest, response: Response):
-    """
-    Password-based login for administrators.
-    """
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT password_hash, is_active FROM admins WHERE admin_id = ?", (body.username,))
-        row = cursor.fetchone()
-
-        if row is None or not row["is_active"]:
-            log.warning("Failed admin login attempt for '%s'", body.username)
-            raise HTTPException(status_code=401, detail="Invalid credentials or account disabled")
-
-        if not verify_password(body.password, row["password_hash"]):
-            log.warning("Invalid password for admin '%s'", body.username)
-            raise HTTPException(status_code=401, detail="Invalid credentials or account disabled")
-
-    # Valid credentials -> issue token in cookie
-    token = create_jwt(body.username, "admin")
-
-    response.set_cookie(
-        key="auth_token",
-        value=token,
-        httponly=True,
-        secure=True,
-        samesite="strict",
-        max_age=JWT_EXPIRY_HOURS * 3600,
-    )
-
-    log.info("Admin '%s' logged in successfully via password", body.username)
-    return {"role": "admin", "voter_id": body.username}
-
+# ══════════════════════════════════════════════════════════════════════════
+# 7.  POST /verify-face — THE CORE ENDPOINT
+# ══════════════════════════════════════════════════════════════════════════
 
 @app.post("/verify-face", response_model=AuthResponse)
-@limiter.limit("5/minute")           # 5 attempts per IP per minute
-async def verify_face(request: Request, payload: FaceVerifyRequest):
+async def verify_face(payload: FaceVerifyRequest):
     """
-    Authenticate a voter by comparing a webcam sequence against the stored
-    128D face encoding, with EAR-based blink liveness detection.
+    Authenticate a voter by comparing a webcam capture against
+    the stored 128D face encoding.
 
-    Rate limited: 5 requests/minute per IP.
+    Flow:
+        1. Decode the Base64 image
+        2. Extract face embedding via dlib ResNet
+        3. Fetch stored encoding from SQLite
+        4. Compare using Euclidean distance (tolerance configured via env)
+        5. If match → issue JWT with expiration
+        6. Otherwise → 401
     """
     voter_id = payload.voter_id.strip().lower()
 
-    if len(payload.images_base64) < 2:
+    # Step 1: Decode image
+    try:
+        image = decode_base64_image(payload.image_base64)
+    except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Liveness detection requires a sequence of images (at least 2).",
+            detail=f"Invalid image: {exc}",
         )
 
-    # Decode images and extract face details
-    frame_details = []
-    for img_b64 in payload.images_base64:
-        try:
-            image = decode_base64_image(img_b64)
-        except ValueError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid image in sequence: {exc}",
-            )
-
-        details = get_face_details(image)
-        if details is not None:
-            frame_details.append(details)
-
-    if not frame_details:
+    # Step 2: Extract face embedding
+    embedding = get_face_embedding(image)
+    if embedding is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No faces detected in the provided image sequence.",
+            detail="No face detected in the image. Please ensure your face "
+            "is clearly visible and well-lit.",
         )
 
-    base_embedding = frame_details[0][0]
-
-    # Consistency check + EAR collection across frames
-    ears = []
-    for emb, landmarks in frame_details:
-        match, _ = compare_faces(base_embedding, emb, tolerance=0.4)
-        if not match:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Multiple different faces or inconsistent face detected across frames.",
-            )
-
-        if "left_eye" in landmarks and "right_eye" in landmarks:
-            left_ear = calculate_ear(landmarks["left_eye"])
-            right_ear = calculate_ear(landmarks["right_eye"])
-            ears.append((left_ear + right_ear) / 2.0)
-
-    # Liveness: blink detection via EAR
-    if len(ears) > 1:
-        min_ear = min(ears)
-        max_ear = max(ears)
-        if min_ear > EAR_MIN_CLOSED or max_ear < EAR_MIN_OPEN:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Liveness check failed. Please blink while verifying.",
-            )
-
-    embedding = base_embedding
-
-    # Fetch stored encoding
+    # Step 3: Fetch stored encoding
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -714,7 +489,9 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
     role: str = row["role"]
 
     try:
-        stored_encoding = np.array(json.loads(row["face_encoding"]), dtype=np.float64)
+        stored_encoding = np.array(
+            json.loads(row["face_encoding"]), dtype=np.float64
+        )
     except (json.JSONDecodeError, TypeError) as exc:
         log.error("Corrupt face encoding for voter '%s': %s", voter_id, exc)
         raise HTTPException(
@@ -722,91 +499,61 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
             detail="Stored face encoding is corrupted. Please re-enroll.",
         )
 
+    # Validate encoding shape
     if stored_encoding.shape != (128,):
-        log.error("Invalid encoding shape for voter '%s': %s", voter_id, stored_encoding.shape)
+        log.error(
+            "Invalid encoding shape for voter '%s': %s",
+            voter_id,
+            stored_encoding.shape,
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Stored face encoding has invalid dimensions. Please re-enroll.",
         )
 
+    # Step 4: Compare
     is_match, distance = compare_faces(stored_encoding, embedding)
 
     log.info(
         "[VERIFY] voter=%s  distance=%.4f  tolerance=%s  match=%s",
-        voter_id, distance, MATCH_TOLERANCE, "YES" if is_match else "NO",
+        voter_id,
+        distance,
+        MATCH_TOLERANCE,
+        "YES" if is_match else "NO",
     )
 
+    # Step 5/6: Decide
     if not is_match:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            # distance NOT included in client-facing message
-            detail="Face verification failed. The face does not match the registered voter.",
+            detail=f"Face verification failed (distance={distance:.4f}, "
+            f"threshold={MATCH_TOLERANCE}). "
+            "The face does not match the registered voter.",
         )
 
+    # Issue JWT with expiration
     token = create_jwt(voter_id, role)
 
-    response = JSONResponse(
-        content={"role": role, "voter_id": voter_id},
-        status_code=status.HTTP_200_OK,
+    return AuthResponse(
+        token=token,
+        role=role,
+        voter_id=voter_id,
+        distance=round(distance, 4),
     )
-    response.set_cookie(
-        key=_COOKIE_NAME,
-        value=token,
-        httponly=True,
-        secure=True,
-        samesite="strict",
-        max_age=_COOKIE_MAX_AGE,
-        path="/",
-    )
-    log.info("[AUTH] voter='%s' role='%s' — HttpOnly cookie issued.", voter_id, role)
-    return response
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# SESSION ENDPOINTS
-# ═══════════════════════════════════════════════════════════════════════════
-
-
-@app.get("/auth/me")
-@limiter.limit("30/minute")
-async def auth_me(request: Request):
-    """
-    Returns the current session's voter_id and role by reading the HttpOnly
-    auth cookie. Returns 401 if the cookie is absent or invalid.
-    """
-    token = request.cookies.get(_COOKIE_NAME)
-    if not token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated.",
-        )
-    payload = decode_jwt(token)
-    return {"voter_id": payload.get("voter_id"), "role": payload.get("role")}
-
-
-@app.post("/auth/logout")
-@limiter.limit("10/minute")
-async def auth_logout(request: Request):
-    """
-    Clears the auth cookie, effectively logging the user out.
-    """
-    response = JSONResponse(content={"message": "Logged out successfully."})
-    response.delete_cookie(key=_COOKIE_NAME, path="/", samesite="strict")
-    log.info("[AUTH] Logout — cookie cleared for %s", request.client.host)
-    return response
-
+# ══════════════════════════════════════════════════════════════════════════
+# 8.  POST /enroll-face — Register a new voter (ADMIN-ONLY)
+# ══════════════════════════════════════════════════════════════════════════
 
 @app.post("/enroll-face", status_code=status.HTTP_201_CREATED)
-@limiter.limit("10/minute")          # admin actions — less strict than verify
 async def enroll_face(
-    request: Request,                # required by slowapi
     payload: EnrollRequest,
     _admin: dict = Depends(require_admin),
 ):
     """
     Register or update a voter's face encoding.
-    Requires admin Bearer token.
-    Rate limited: 10 requests/minute per IP.
+    Requires admin authentication via Bearer token.
     """
     voter_id = payload.voter_id.strip().lower()
     role = payload.role.strip()
@@ -829,11 +576,12 @@ async def enroll_face(
     if embedding is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No face detected in the enrollment image.",
+            detail="No face detected in the image.",
         )
 
     encoding_json = json.dumps(embedding.tolist())
 
+    # Upsert into SQLite
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -848,5 +596,117 @@ async def enroll_face(
         )
         conn.commit()
 
-    log.info("[ENROLL] voter='%s' role='%s' enrolled/updated by admin.", voter_id, role)
-    return {"message": f"Voter '{voter_id}' enrolled successfully.", "role": role}
+    # Also update encodings.pkl so CLI tools stay in sync
+    _sync_to_pkl(voter_id, embedding)
+
+    log.info("Enrolled voter: %s (role=%s)", voter_id, role)
+    return {
+        "message": f"Voter '{voter_id}' enrolled successfully.",
+        "voter_id": voter_id,
+    }
+
+
+def _sync_to_pkl(voter_id: str, encoding: np.ndarray) -> None:
+    """Write back to encodings.pkl to keep CLI tools synchronized."""
+    try:
+        if ENCODINGS_PKL_PATH.exists():
+            with open(ENCODINGS_PKL_PATH, "rb") as f:
+                data = pickle.load(f)
+        else:
+            data = {"encodings": [], "names": []}
+
+        # Replace existing or append
+        display_name = voter_id.title()
+        indices = [
+            i for i, n in enumerate(data["names"]) if n.lower() == voter_id
+        ]
+        if indices:
+            data["encodings"][indices[0]] = encoding
+            data["names"][indices[0]] = display_name
+        else:
+            data["encodings"].append(encoding)
+            data["names"].append(display_name)
+
+        with open(ENCODINGS_PKL_PATH, "wb") as f:
+            pickle.dump(data, f)
+    except Exception as e:
+        log.warning("Could not sync to encodings.pkl: %s", e)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# 9.  GET /voters — List registered voters (ADMIN-ONLY)
+# ══════════════════════════════════════════════════════════════════════════
+
+@app.get("/voters")
+async def list_voters(_admin: dict = Depends(require_admin)):
+    """List all registered voter IDs and their roles. Admin-only."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT voter_id, role FROM voters ORDER BY voter_id")
+        rows = cursor.fetchall()
+    return {
+        "voters": [
+            {"voter_id": r["voter_id"], "role": r["role"]} for r in rows
+        ]
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# 10.  DELETE /voters/{voter_id} — Remove a voter (ADMIN-ONLY)
+# ══════════════════════════════════════════════════════════════════════════
+
+@app.delete("/voters/{voter_id}")
+async def delete_voter(voter_id: str, _admin: dict = Depends(require_admin)):
+    """Delete a voter from the database. Admin-only."""
+    voter_id = voter_id.strip().lower()
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM voters WHERE voter_id = ?", (voter_id,))
+        if cursor.rowcount == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Voter '{voter_id}' not found.",
+            )
+        conn.commit()
+
+    log.info("Deleted voter: %s", voter_id)
+    return {"message": f"Voter '{voter_id}' deleted successfully."}
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# 11.  GET /verify-token — Validate an existing JWT
+# ══════════════════════════════════════════════════════════════════════════
+
+@app.get("/verify-token")
+async def verify_token(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """Verify that a JWT is still valid and return the decoded payload."""
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header missing.",
+        )
+    payload = decode_jwt(credentials.credentials)
+    return {
+        "valid": True,
+        "voter_id": payload.get("voter_id"),
+        "role": payload.get("role"),
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# 12.  MAIN — Direct execution support
+# ══════════════════════════════════════════════════════════════════════════
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "main:app",
+        host="127.0.0.1",
+        port=8000,
+        reload=True,
+        log_level="info",
+    )
