@@ -14,6 +14,11 @@
 
 This project is a highly secure, transparent, and tamper-proof voting system built on the Ethereum blockchain. By integrating advanced facial recognition technology with decentralized smart contracts, the system ensures that elections are fair, verifiable, and completely immune to voter fraud or manipulation.
 
+## Deployed Contract
+Network: Ethereum Sepolia Testnet
+Contract Address: `0xYOUR_CONTRACT_ADDRESS_HERE`
+Etherscan: https://sepolia.etherscan.io/address/0xYOUR_CONTRACT_ADDRESS_HERE
+
 ### Dashboard Overview
 
 ![Admin Dashboard](./public/Dashboard.png)
