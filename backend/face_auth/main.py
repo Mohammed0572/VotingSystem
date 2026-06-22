@@ -129,6 +129,10 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "face_voter_db.sqlite")
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA synchronous=NORMAL;")  
+    # NORMAL is safe for app crashes; OS-level crash may lose last txn.
+    # Acceptable for this deployment context (single-node, not safety-critical prod).
     try:
         yield conn
     finally:
@@ -145,6 +149,7 @@ def init_db() -> None:
                 face_encoding  TEXT NOT NULL
             )
         """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_voters_role ON voters(role);")
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS admins (
                 admin_id      TEXT PRIMARY KEY NOT NULL,
@@ -153,6 +158,7 @@ def init_db() -> None:
                 is_active     INTEGER NOT NULL DEFAULT 1
             )
         """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_admins_active ON admins(is_active);")
         conn.commit()
     log.info("Database initialised at %s", DB_PATH)
 
@@ -518,7 +524,7 @@ class EnrollRequest(BaseModel):
 
 
 
-@app.post("/auth/refresh")
+@app.post("/api/v1/auth/refresh")
 async def auth_refresh(request: Request, response: Response):
     """
     Refresh an existing auth token.
@@ -569,7 +575,7 @@ _COOKIE_NAME = "auth_token"
 _COOKIE_MAX_AGE = int(timedelta(hours=JWT_EXPIRY_HOURS).total_seconds())  # seconds
 
 
-@app.post("/admin-login")
+@app.post("/api/v1/admin-login")
 @limiter.limit("5/minute")
 async def admin_login(request: Request, body: AdminLoginRequest, response: Response):
     """
@@ -604,7 +610,7 @@ async def admin_login(request: Request, body: AdminLoginRequest, response: Respo
     return {"role": "admin", "voter_id": body.username}
 
 
-@app.post("/verify-face", response_model=AuthResponse)
+@app.post("/api/v1/verify-face", response_model=AuthResponse)
 @limiter.limit("5/minute")           # 5 attempts per IP per minute
 async def verify_face(request: Request, payload: FaceVerifyRequest):
     """
@@ -742,7 +748,7 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
 # ═══════════════════════════════════════════════════════════════════════════
 
 
-@app.get("/auth/me")
+@app.get("/api/v1/auth/me")
 @limiter.limit("30/minute")
 async def auth_me(request: Request):
     """
@@ -759,7 +765,7 @@ async def auth_me(request: Request):
     return {"voter_id": payload.get("voter_id"), "role": payload.get("role")}
 
 
-@app.post("/auth/logout")
+@app.post("/api/v1/auth/logout")
 @limiter.limit("10/minute")
 async def auth_logout(request: Request):
     """
@@ -771,7 +777,7 @@ async def auth_logout(request: Request):
     return response
 
 
-@app.post("/enroll-face", status_code=status.HTTP_201_CREATED)
+@app.post("/api/v1/enroll-face", status_code=status.HTTP_201_CREATED)
 @limiter.limit("10/minute")          # admin actions — less strict than verify
 async def enroll_face(
     request: Request,                # required by slowapi
