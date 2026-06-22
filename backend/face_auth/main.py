@@ -419,7 +419,7 @@ app = FastAPI(
 )
 
 # ── HTTPS Enforcement and Security Headers ───────────────────────────────────
-app.add_middleware(HTTPSRedirectMiddleware)
+# app.add_middleware(HTTPSRedirectMiddleware)
 
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):

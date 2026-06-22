@@ -16,4 +16,7 @@ export default defineConfig({
     setupFiles: ['./src/setupTests.ts'],
     globals: true,
   },
+  server: {
+    port: 8080,
+  },
 })
