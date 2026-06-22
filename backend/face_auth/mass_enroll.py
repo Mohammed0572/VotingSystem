@@ -3,7 +3,7 @@ import sqlite3
 import json
 import face_recognition
 
-DB_PATH = "face_voter_db.sqlite"
+DB_PATH = "voting.db"
 IMAGES_DIR = "enrollment_images"
 
 def init_db():
@@ -44,11 +44,11 @@ def mass_enroll():
             face_locations = face_recognition.face_locations(image)
 
             if len(face_locations) == 0:
-                print(f"[{voter_id}] Failed: No face detected in {filename}")
+                print(f"[{voter_id}] ❌ Failed: No face detected in {filename}")
                 failed += 1
                 continue
             if len(face_locations) > 1:
-                print(f"[{voter_id}] Failed: Multiple faces detected in {filename}. Please use an image with only one face.")
+                print(f"[{voter_id}] ❌ Failed: Multiple faces detected in {filename}. Please use an image with only one face.")
                 failed += 1
                 continue
 
@@ -65,12 +65,11 @@ def mass_enroll():
                 """,
                 (voter_id, 'user', encoding_json),
             )
-            conn.commit()
-            print(f"[{voter_id}] Successfully enrolled.")
+            print(f"[{voter_id}] ✅ Successfully enrolled.")
             enrolled += 1
 
         except Exception as e:
-            print(f"[{voter_id}] Error processing {filename}: {e}")
+            print(f"[{voter_id}] ❌ Error processing {filename}: {e}")
             failed += 1
 
     conn.commit()

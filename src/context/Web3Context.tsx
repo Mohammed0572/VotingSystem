@@ -37,9 +37,12 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const initWeb3 = async () => {
       try {
+        const VOTING_CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS;
         let currentWeb3;
-        // Force local Ganache provider for development to avoid MetaMask network mismatch
-        currentWeb3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:7545"));
+        // Use Sepolia testnet provider
+        currentWeb3 = new Web3(
+          new Web3.providers.HttpProvider(import.meta.env.VITE_SEPOLIA_RPC_URL)
+        );
         
         setWeb3(currentWeb3);
         
@@ -50,7 +53,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
         VotingContract.setProvider(currentWeb3.currentProvider);
         VotingContract.defaults({ from: accounts[0], gas: 6654755 });
         
-        const instance = await VotingContract.deployed();
+        const instance = await VotingContract.at(VOTING_CONTRACT_ADDRESS);
         setContract(instance);
         setIsLoading(false);
       } catch (error) {
