@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, API_BASE } from '../context/AuthContext';
 
 const VoterLogin = () => {
   const { t } = useLanguage();
@@ -90,7 +90,7 @@ const VoterLogin = () => {
     updateStatus("Verifying identity securely...", "info");
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/verify-face', {
+      const response = await fetch(`${API_BASE}/verify-face`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // allow browser to store the HttpOnly cookie
@@ -170,7 +170,11 @@ const VoterLogin = () => {
         </div>
 
         {status.message && (
-          <div className={`p-4 border-l-4 rounded-sm ${status.type === 'error' ? 'bg-[#FFF5F5] border-danger text-danger' : status.type === 'success' ? 'bg-india-green-light border-india-green text-india-green' : 'bg-india-blue-lt border-india-blue text-india-blue'}`}>
+          <div
+            role={status.type === 'error' ? 'alert' : 'status'}
+            aria-live={status.type === 'error' ? 'assertive' : 'polite'}
+            className={`p-4 border-l-4 rounded-sm ${status.type === 'error' ? 'bg-[#FFF5F5] border-danger text-danger' : status.type === 'success' ? 'bg-india-green-light border-india-green text-india-green' : 'bg-india-blue-lt border-india-blue text-india-blue'}`}
+          >
             <strong>{t('voter.status')}</strong> {status.message}
           </div>
         )}
