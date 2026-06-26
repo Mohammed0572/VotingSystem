@@ -1,5 +1,0 @@
-opencv-python
-face-recognition
-dlib-bin
-numpy
-Pillow
