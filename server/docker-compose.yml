@@ -52,12 +52,12 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./face-recognition:/app/face-recognition:ro   # encodings.pkl
+      - ./backend/face_recognition:/app/face-recognition:ro   # encodings.pkl
 
   # ── Express Frontend ───────────────────────────────────────
   frontend:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
     container_name: voting_frontend
     restart: unless-stopped
