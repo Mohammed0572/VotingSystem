@@ -52,7 +52,7 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./backend/face_recognition:/app/face-recognition:ro   # encodings.pkl
+      - ./face-recognition:/app/face-recognition:ro   # encodings.pkl
 
   # ── Express Frontend ───────────────────────────────────────
   frontend:
