@@ -121,9 +121,11 @@ In recent security remediation cycles, all identified vulnerabilities have been 
 ## Project Structure
 
 ```text
-├── backend/                      # Python FastAPI server (face_auth) & face recognition scripts
-├── blockchain/                   # Solidity smart contracts, migrations, and Truffle configs
-├── deploy/                       # Docker orchestration & deployment configs (nginx, vercel)
+├── server/
+│   ├── Database_API/             # Python FastAPI server (face_auth)
+│   ├── face-recognition/         # Python face recognition scripts (blink detection, register, liveness)
+│   ├── blockchain/               # Solidity smart contracts, migrations, and Truffle configs
+│   └── deploy/                   # Docker orchestration & deployment configs (nginx, vercel)
 ├── docs/                         # Project documentation and security notes
 ├── src/                          # Frontend source files (HTML/CSS/JS/TS)
 ├── index.ts                      # Express server entry point (Frontend)
@@ -166,7 +168,7 @@ pnpm install
 Install the Python packages for the Face Authentication API:
 
 ```bash
-cd backend/face_auth
+cd server/Database_API
 pip install -r requirements.txt
 cd ../..
 ```
@@ -179,7 +181,7 @@ Copy the example environment files and set them up:
 
 ```bash
 cp .env.example .env
-cp backend/face_auth/.env.example backend/face_auth/.env
+cp server/Database_API/.env.example server/Database_API/.env
 ```
 
 Generate two unique secure secret keys by running this command twice:
@@ -188,7 +190,7 @@ Generate two unique secure secret keys by running this command twice:
 node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ```
 
-Place one key as `NODE_SECRET_KEY` in the root `.env` file, and the other as `FASTAPI_SECRET_KEY` in `backend/face_auth/.env`.
+Place one key as `NODE_SECRET_KEY` in the root `.env` file, and the other as `FASTAPI_SECRET_KEY` in `server/Database_API/.env`.
 
 ### 4. Start the Blockchain (Ganache)
 
@@ -241,7 +243,7 @@ You need to run two servers simultaneously in separate terminals:
 **Terminal 1: Start the Face Auth API**
 
 ```bash
-cd backend/face_auth
+cd server/Database_API
 python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
@@ -266,7 +268,7 @@ This project includes automated testing suites for the Smart Contracts, Backend 
 The solidity smart contracts are tested using Truffle and Mocha/Chai. Ensure Ganache is running before executing the tests.
 
 ```bash
-cd blockchain
+cd server/blockchain
 npx truffle test
 ```
 
@@ -275,7 +277,7 @@ npx truffle test
 The FastAPI backend is tested using `pytest`. The tests mock the face recognition modules to run quickly without needing real webcam input.
 
 ```bash
-cd backend/face_auth
+cd server/Database_API
 pytest
 ```
 
