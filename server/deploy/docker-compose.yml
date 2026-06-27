@@ -35,7 +35,7 @@ services:
   # ── Face Auth API (FastAPI) ────────────────────────────────
   face_auth:
     build:
-      context: ../backend/face_auth
+      context: ../Database_API
       dockerfile: Dockerfile
     container_name: voting_face_auth
     restart: unless-stopped
@@ -52,7 +52,7 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ../backend/face_recognition:/app/face-recognition:ro   # encodings.pkl
+      - ../face-recognition:/app/face-recognition:ro   # encodings.pkl
 
   # ── Express Frontend ───────────────────────────────────────
   frontend:
